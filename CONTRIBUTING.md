@@ -1,4 +1,4 @@
-\# 🚀 Guía de Colaboración y Workflow - Proyecto Escolar
+\# Guía de Colaboración y Workflow - Proyecto Escolar
 
 
 
@@ -6,11 +6,7 @@
 
 
 
-\---
-
-
-
-\## 📌 1. Reglas de Oro
+\## 1. Reglas de Oro
 
 
 
@@ -30,11 +26,9 @@
 
 
 
-\---
 
 
-
-\## 🔄 2. El Flujo de Trabajo (Paso a Paso)
+\## 2. El Flujo de Trabajo (Paso a Paso)
 
 
 
@@ -53,6 +47,8 @@ Asegúrate de tener lo último que tus compañeros han subido a la base del proy
 git checkout develop
 
 git pull origin develop
+
+```
 
 
 
