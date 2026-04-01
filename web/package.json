@@ -1,0 +1,11 @@
+{
+  "name": "fieldcheck-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "App web de administración (cercos geográficos y reportes de asistencia)",
+  "scripts": {
+    "dev": "echo 'Bootstrap pendiente: inicializa React (Vite/CRA) dentro de web/' && exit 1",
+    "build": "echo 'Bootstrap pendiente' && exit 1",
+    "test": "echo 'Bootstrap pendiente' && exit 1"
+  }
+}
