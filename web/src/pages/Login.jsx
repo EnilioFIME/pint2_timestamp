@@ -35,8 +35,10 @@ function Login() {
           />
         </div>
 
-        <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
-          Iniciar Sesión
+        <button 
+            onClick={() => window.location.href = '/dashboard'}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+            Iniciar Sesión
         </button>
 
         <p className="text-center text-xs text-gray-400 mt-6">
