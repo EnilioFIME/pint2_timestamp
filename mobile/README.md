@@ -1,32 +1,48 @@
-# mobile — App Android (Checadores)
+# FieldCheck — Mobile Module (Android)
 
-## Propósito
-Aplicación Android usada por residentes de obra (checadores) para registrar asistencia (**CLOCK_IN/CLOCK_OUT**) mediante lectura de tarjetas **NFC**. Cuando el motor de heurísticas identifica un registro sospechoso, se solicita **verificación biométrica facial** integrando **Azure Face API**.
+Módulo Android del sistema **WorkStamp**, sistema de control de asistencia para empleados de campo de una empresa constructora.
 
-## Tecnologías
-- Android (Java/Kotlin)
-- NFC (Android NFC API)
-- Cámara / captura facial
-- Integración con API REST del backend
+## Rol del asistente
 
-## Estructura relevante
-- `app/src/main/java/com/fieldcheck/nfc`: lectura/parseo de tarjetas NFC
-- `app/src/main/java/com/fieldcheck/biometric`: captura facial + flujo de verificación
-- `app/src/main/java/com/fieldcheck/ui`: pantallas
+Actúa como Arquitecto de software senior y desarrollador senior de Android (Java/Kotlin), Spring Boot y Azure. Enfoque 100% práctico, con sentido de urgencia. Respuestas concisas y precisas. Evita alucinar.
 
-## Cómo ejecutarlo localmente
-Este módulo es un **esqueleto** de estructura.
+## Descripción del módulo
 
-1. Recomendado: inicializa un proyecto Android real dentro de `mobile/` usando Android Studio:
-   - "New Project" → selecciona plantilla (p. ej. Empty Activity)
-   - Asegura que el `applicationId` y paquetes usen `com.fieldcheck`
-2. Configura el backend local o remoto:
-   - Define la URL base del backend (p. ej. `BACKEND_BASE_URL` en `BuildConfig` o `local.properties`)
-3. Ejecuta:
-   - Abre `mobile/` en Android Studio y usa "Run" sobre un dispositivo/emulador con NFC (o usa un lector externo si aplica)
+App Android nativa usada por **checadores** (residentes de obra). Los empleados acercan una tarjeta NFC al dispositivo para registrar su clock-in/clock-out. Cuando el motor de heurísticas del backend detecta un registro sospechoso, la app solicita verificación biométrica facial integrada con Azure Face API.
 
-## Variables sugeridas
-- Endpoint backend: `BACKEND_BASE_URL`
-- Azure Face (normalmente el backend maneja la llave): no debe ir en cliente
+## Reglas críticas
 
-> Recomendación: nunca embebas `AZURE_FACE_KEY` en la app; el backend debe orquestar Face API.
+- Las claves de Azure Face **NUNCA** van en el cliente
+- El backend orquesta toda la comunicación con Azure Face API
+- La app solo captura la imagen y la envía al backend
+
+## Stack
+
+- **Lenguaje:** Java (principal) / Kotlin
+- **Plataforma:** Android nativo
+- **NFC:** Android NFC API
+- **Biometría:** Cámara + Azure Face API (orquestada por backend)
+- **Backend:** Spring Boot REST API
+- **Base de datos:** Azure SQL Server
+
+## Estado actual
+
+- Monorepo: `/timestamp`
+- Este módulo: `/timestamp/mobile`
+- Package: `com.fieldcheck`
+- Minimum SDK: API 26 (Android 8.0)
+- Build: Kotlin DSL (`build.gradle.kts`)
+- Branch activo: `feature/mobile-android-setup`
+
+## Estructura objetivo de paquetes
+
+```
+app/src/main/java/com/fieldcheck/
+├── nfc/          → lectura y parseo de tarjetas NFC
+├── biometric/    → captura facial y flujo de verificación
+└── ui/           → pantallas y componentes de interfaz
+```
+
+## Próximo paso
+
+Definir la arquitectura de la app y crear la estructura de paquetes base antes de escribir cualquier funcionalidad.
