@@ -75,6 +75,7 @@ CREATE TABLE dbo.Usuarios (
     rol NVARCHAR(20) NOT NULL CONSTRAINT CHK_Usuarios_rol CHECK (rol IN ('Empleado', 'Checador', 'Administrador')),
     numero_empleado NVARCHAR(6) NOT NULL CONSTRAINT UQ_Usuarios_numero_empleado UNIQUE,
     email NVARCHAR(60) NULL CONSTRAINT UQ_Usuarios_email UNIQUE,
+    password NVARCHAR(255) NULL,
     apellido NVARCHAR(100) NOT NULL,
     nombre NVARCHAR(100) NOT NULL,
     status BIT NOT NULL CONSTRAINT DF_Usuarios_status DEFAULT (1),
@@ -89,7 +90,7 @@ CREATE TABLE dbo.Usuarios (
     -- REGLAS DE NEGOCIO
     CONSTRAINT CHK_Usuarios_reglas_rol CHECK (
         (rol = 'Empleado' AND email IS NULL AND (dato_biometrico_id IS NOT NULL OR tarjeta_nfc_id IS NOT NULL)) OR 
-        (rol IN ('Checador', 'Administrador') AND email IS NOT NULL)
+        (rol IN ('Checador', 'Administrador') AND email IS NOT NULL AND password IS NOT NULL)
     )
 );
 GO
