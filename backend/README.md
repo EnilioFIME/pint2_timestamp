@@ -34,7 +34,7 @@ Este módulo es un **esqueleto** (estructura + `pom.xml`). Para hacerlo ejecutab
 3. Configuración:
    - Define variables de entorno (ejemplo):
      - `SQLSERVER_HOST`, `SQLSERVER_DB`, `SQLSERVER_USER`, `SQLSERVER_PASSWORD`
-     - `AZURE_FACE_ENDPOINT`, `AZURE_FACE_KEY`
+     - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 4. Arranque:
    - `cd backend`
    - `mvn -q test`
