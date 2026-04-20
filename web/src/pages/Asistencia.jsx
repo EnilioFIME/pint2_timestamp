@@ -59,6 +59,15 @@ export default function Asistencia() {
 
   // Exportar reporte a CSV
   const exportarReporte = () => {
+    const escaparCampo = (valor) => {
+      const str = String(valor ?? '');
+      // Si contiene coma, comilla o salto de línea, envolver en comillas dobles
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
     const headers = ['Empleado', 'Proyecto', 'Tipo', 'Método', 'Hora', 'Fecha'];
     const csvData = filteredRegistros.map(r => [
       r.empleado,
@@ -66,11 +75,14 @@ export default function Asistencia() {
       r.tipo,
       r.metodo,
       r.hora,
-      r.fechaDisplay
+      r.fechaDisplay,
     ]);
-    
-    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(escaparCampo).join(','))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
