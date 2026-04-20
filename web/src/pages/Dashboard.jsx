@@ -1,22 +1,14 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building2, Users, CalendarCheck, MapPin, TrendingUp, Clock } from 'lucide-react';
-import Frentes from './Frentes';
-import Proyectos from './Proyectos';
-import Empleados from './Empleados';
-import Asistencia from './Asistencia';
-import Geocerca from './Geocerca';
-import Usuarios from './Usuarios';
 
 export default function Dashboard() {
-  // Estado para la pestaña activa
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
 
-  // Datos de ejemplo  
   const stats = {
     proyectosActivos: 12,
     empleadosActivos: 148,
     asistenciaHoy: 134,
-    frentesActivos: 4
+    frentesActivos: 4,
   };
 
   const actividadReciente = [
@@ -41,12 +33,15 @@ export default function Dashboard() {
     { title: 'Frentes Activos', value: stats.frentesActivos, icon: MapPin, color: 'bg-orange-500' },
   ];
 
-  // Vista del panel principal
-  const DashboardView = () => (
+  const avancePromedio = Math.round(
+    frentesEstado.reduce((acc, f) => acc + f.porcentaje, 0) / frentesEstado.length
+  );
+
+  return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Panel Principal</h1>
 
-      {/* Tarjetas de metricas */}
+      {/* Tarjetas de métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {metricCards.map((card, index) => (
           <div key={index} className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -55,7 +50,7 @@ export default function Dashboard() {
                 <p className="text-sm text-gray-500 mb-1">{card.title}</p>
                 <p className="text-3xl font-bold text-gray-800">{card.value}</p>
               </div>
-              <div className={`${card.color} rounded-lg w-12 h-12 flex items-center justify-center`}>
+              <div className={`${card.color} rounded-lg w-12 h-12 flex items-center justify-center flex-shrink-0`}>
                 <card.icon size={24} className="text-white" />
               </div>
             </div>
@@ -70,19 +65,18 @@ export default function Dashboard() {
 
       {/* Actividad reciente y estado de frentes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
         {/* Actividad Reciente */}
-        <div className="bg-white rounded-xl shadow-sm">
-          <div className="p-5 border-b">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Actividad Reciente</h2>
-              <Clock size={18} className="text-gray-400" />
-            </div>
+        <div className="bg-white rounded-xl shadow-sm flex flex-col">
+          <div className="p-5 border-b flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-800">Actividad Reciente</h2>
+            <Clock size={18} className="text-gray-400" />
           </div>
-          <div className="p-4">
+          <div className="flex-1 divide-y divide-gray-100">
             {actividadReciente.map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-3 border-b last:border-0">
+              <div key={i} className="flex items-center justify-between px-5 py-3">
                 <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center text-xs font-bold text-white">
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-500 rounded-full w-10 h-10 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
                     {item.avatar}
                   </div>
                   <div>
@@ -90,25 +84,28 @@ export default function Dashboard() {
                     <p className="text-xs text-gray-500">{item.detalle}</p>
                   </div>
                 </div>
-                <span className="text-xs text-gray-400">{item.hora}</span>
+                <span className="text-xs text-gray-400 whitespace-nowrap ml-3">{item.hora}</span>
               </div>
             ))}
           </div>
           <div className="p-4 border-t">
-            <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+            <button
+              onClick={() => navigate('/asistencia')}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
               Ver todas las actividades →
             </button>
           </div>
         </div>
 
         {/* Estado de Frentes */}
-        <div className="bg-white rounded-xl shadow-sm">
+        <div className="bg-white rounded-xl shadow-sm flex flex-col">
           <div className="p-5 border-b">
             <h2 className="text-lg font-semibold text-gray-800">Estado de Frentes</h2>
           </div>
-          <div className="p-5">
+          <div className="flex-1 p-5 space-y-5">
             {frentesEstado.map((frente, i) => (
-              <div key={i} className="mb-5 last:mb-0">
+              <div key={i}>
                 <div className="flex justify-between text-sm mb-2">
                   <span className="font-medium text-gray-700">{frente.nombre}</span>
                   <span className="text-gray-500">{frente.porcentaje}%</span>
@@ -117,51 +114,18 @@ export default function Dashboard() {
                   <div
                     className={`${frente.color} h-2.5 rounded-full transition-all duration-500`}
                     style={{ width: `${frente.porcentaje}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
             ))}
           </div>
-          <div className="p-4 border-t bg-gray-50 rounded-b-xl">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Avance promedio</span>
-              <span className="text-lg font-bold text-gray-800">
-                {Math.round(frentesEstado.reduce((acc, f) => acc + f.porcentaje, 0) / frentesEstado.length)}%
-              </span>
-            </div>
+          <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between items-center">
+            <span className="text-sm text-gray-600">Avance promedio</span>
+            <span className="text-lg font-bold text-gray-800">{avancePromedio}%</span>
           </div>
         </div>
+
       </div>
-    </div>
-  );
-
-  // Renderiza el contenido segun la pestaña seleccionada
-  const renderContent = () => {
-    switch(activeTab) {
-      case 'dashboard':
-        return <DashboardView />;
-      case 'frentes':
-        return <Frentes />;
-      case 'proyectos':
-        return <Proyectos />;
-      case 'empleados':
-        return <Empleados />;
-      case 'asistencia':
-        return <Asistencia />;
-      case 'geocerca':
-        return <Geocerca />;
-      case 'usuarios':
-        return <Usuarios />;
-      default:
-        return <DashboardView />;
-    }
-  };
-
-  return (
-    <div className="flex-1 overflow-auto">
-      <main className="p-6">
-        {renderContent()}
-      </main>
     </div>
   );
 }
