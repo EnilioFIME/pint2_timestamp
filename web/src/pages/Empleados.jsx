@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Edit, Trash2, Plus, Search, X, Smartphone, Fingerprint, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import Toast from '../components/Toast';
 
 const initialEmpleados = [
   { id: 'EMP-001', nombre: 'Antonio Rodriguez', estado: 'Activo', nfc: 'Asignado', biometrico: 'Registrado' },
@@ -17,6 +18,7 @@ export default function Empleados() {
   const [showModal, setShowModal] = useState(false);
   const [editingEmpleado, setEditingEmpleado] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const filteredEmpleados = empleados.filter(empleado =>
     empleado.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -26,10 +28,12 @@ export default function Empleados() {
   const handleDelete = (id) => {
     setEmpleados(empleados.filter(e => e.id !== id));
     setConfirmDeleteId(null);
+    setToast({ type: 'success', text: 'Empleado eliminado correctamente' });
   };
 
   const handleSave = (empleadoData) => {
-    if (editingEmpleado) {
+    const isEditing = !!editingEmpleado;
+    if (isEditing) {
       setEmpleados(empleados.map(e => e.id === editingEmpleado.id ? empleadoData : e));
     } else {
       const newId = `EMP-${String(empleados.length + 1).padStart(3, '0')}`;
@@ -37,6 +41,7 @@ export default function Empleados() {
     }
     setShowModal(false);
     setEditingEmpleado(null);
+    setToast({ type: 'success', text: isEditing ? 'Empleado actualizado correctamente' : 'Empleado registrado correctamente' });
   };
 
   const getEstadoColor = (estado) => {
@@ -182,6 +187,7 @@ export default function Empleados() {
           onClose={() => { setShowModal(false); setEditingEmpleado(null); }}
         />
       )}
+      <Toast message={toast} onClose={() => setToast(null)} />
     </div>
   );
 }
