@@ -1,11 +1,13 @@
 package com.fieldcheck.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "Proyectos")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Proyecto {
 
     @Id
@@ -15,11 +17,11 @@ public class Proyecto {
     @Column(nullable = false, unique = true, length = 36)
     private String uuid;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "frente_id", nullable = false)
     private Frente frente;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "cerco_id")
     private CercoGeografico cerco;
 

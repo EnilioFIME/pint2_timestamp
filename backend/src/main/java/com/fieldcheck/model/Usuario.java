@@ -1,11 +1,13 @@
 package com.fieldcheck.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "Usuarios")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Usuario {
 
     @Id
@@ -15,11 +17,11 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 36)
     private String uuid;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tarjeta_nfc_id")
     private TarjetaNFC tarjetaNfc;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "dato_biometrico_id")
     private DatoBiometrico datoBiometrico;
 

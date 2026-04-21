@@ -1,5 +1,6 @@
 package com.fieldcheck.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -7,6 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "Asistencias")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Asistencia {
 
     @Id
@@ -16,11 +18,11 @@ public class Asistencia {
     @Column(nullable = false, unique = true, length = 36)
     private String uuid;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "proyecto_id", nullable = false)
     private Proyecto proyecto;
 
