@@ -150,57 +150,61 @@ export default function Asistencia() {
 
         {/* Panel de filtros avanzados */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Empleado</label>
-              <select
-                value={filtros.empleado}
-                onChange={(e) => setFiltros({ ...filtros, empleado: e.target.value })}
-                className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {empleadosList.map(emp => (
-                  <option key={emp} value={emp}>{emp}</option>
-                ))}
-              </select>
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
+            {/* Fila 1: selects */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Empleado</label>
+                <select
+                  value={filtros.empleado}
+                  onChange={(e) => setFiltros({ ...filtros, empleado: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {empleadosList.map(emp => (
+                    <option key={emp} value={emp}>{emp}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Proyecto</label>
+                <select
+                  value={filtros.proyecto}
+                  onChange={(e) => setFiltros({ ...filtros, proyecto: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {proyectosList.map(proj => (
+                    <option key={proj} value={proj}>{proj}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+                <select
+                  value={filtros.tipo}
+                  onChange={(e) => setFiltros({ ...filtros, tipo: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {tiposList.map(tipo => (
+                    <option key={tipo} value={tipo}>{tipo}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Método</label>
+                <select
+                  value={filtros.metodo}
+                  onChange={(e) => setFiltros({ ...filtros, metodo: e.target.value })}
+                  className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {metodosList.map(metodo => (
+                    <option key={metodo} value={metodo}>{metodo}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Proyecto</label>
-              <select
-                value={filtros.proyecto}
-                onChange={(e) => setFiltros({ ...filtros, proyecto: e.target.value })}
-                className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {proyectosList.map(proj => (
-                  <option key={proj} value={proj}>{proj}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
-              <select
-                value={filtros.tipo}
-                onChange={(e) => setFiltros({ ...filtros, tipo: e.target.value })}
-                className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {tiposList.map(tipo => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Método</label>
-              <select
-                value={filtros.metodo}
-                onChange={(e) => setFiltros({ ...filtros, metodo: e.target.value })}
-                className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {metodosList.map(metodo => (
-                  <option key={metodo} value={metodo}>{metodo}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <div className="flex-1">
+            {/* Fila 2: fechas */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Desde</label>
                 <input
                   type="date"
@@ -209,7 +213,7 @@ export default function Asistencia() {
                   className="w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className="flex-1">
+              <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Hasta</label>
                 <input
                   type="date"
