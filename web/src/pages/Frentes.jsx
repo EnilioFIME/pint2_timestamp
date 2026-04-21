@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Edit, Trash2, Plus, Search, X, AlertTriangle } from 'lucide-react';
+import Toast from '../components/Toast';
 
 const initialFrentes = [
   { id: 1, nombre: 'Complejo Centro', descripcion: 'Proyecto principal de edificio comercial', estado: 'Activo' },
@@ -13,6 +14,7 @@ export default function Frentes() {
   const [showModal, setShowModal] = useState(false);
   const [editingFrente, setEditingFrente] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const filteredFrentes = frentes.filter(frente =>
     frente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -22,16 +24,19 @@ export default function Frentes() {
   const handleDelete = (id) => {
     setFrentes(frentes.filter(f => f.id !== id));
     setConfirmDeleteId(null);
+    setToast({ type: 'success', text: 'Frente eliminado correctamente' });
   };
 
   const handleSave = (frenteData) => {
-    if (editingFrente) {
+    const isEditing = !!editingFrente;
+    if (isEditing) {
       setFrentes(frentes.map(f => f.id === editingFrente.id ? { ...frenteData, id: editingFrente.id } : f));
     } else {
       setFrentes([...frentes, { ...frenteData, id: Date.now() }]);
     }
     setShowModal(false);
     setEditingFrente(null);
+    setToast({ type: 'success', text: isEditing ? 'Frente actualizado correctamente' : 'Frente agregado correctamente' });
   };
 
   return (
@@ -152,6 +157,7 @@ export default function Frentes() {
           onClose={() => { setShowModal(false); setEditingFrente(null); }}
         />
       )}
+      <Toast message={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

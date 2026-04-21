@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Plus, Edit, Trash2, X, Mail, Shield, CheckCircle, XCircle, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import Toast from '../components/Toast';
 
 const initialUsuarios = [
   { id: 1, email: 'admin@workstamp.com', rol: 'Administrador', estado: 'Activo', ultimoAcceso: '2026-02-11 09:30 AM' },
@@ -16,6 +17,7 @@ export default function Usuarios() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const filteredUsuarios = usuarios.filter(usuario =>
     usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -25,10 +27,12 @@ export default function Usuarios() {
   const handleDelete = (id) => {
     setUsuarios(usuarios.filter(u => u.id !== id));
     setConfirmDeleteId(null);
+    setToast({ type: 'success', text: 'Usuario eliminado correctamente' });
   };
 
   const handleSave = (usuarioData) => {
-    if (editingUser) {
+    const isEditing = !!editingUser;
+    if (isEditing) {
       setUsuarios(usuarios.map(u =>
         u.id === editingUser.id ? { ...usuarioData, id: editingUser.id, ultimoAcceso: u.ultimoAcceso } : u
       ));
@@ -37,6 +41,7 @@ export default function Usuarios() {
     }
     setShowModal(false);
     setEditingUser(null);
+    setToast({ type: 'success', text: isEditing ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente' });
   };
 
   const getEstadoColor = (estado) =>
@@ -184,6 +189,7 @@ export default function Usuarios() {
           onClose={() => { setShowModal(false); setEditingUser(null); }}
         />
       )}
+      <Toast message={toast} onClose={() => setToast(null)} />
     </div>
   );
 }
