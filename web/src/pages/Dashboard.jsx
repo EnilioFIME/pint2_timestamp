@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Building2, Users, CalendarCheck, MapPin, TrendingUp, Clock } from 'lucide-react';
+import { Building2, Users, CalendarCheck, MapPin, TrendingUp, Clock, BarChart2 } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -19,11 +19,11 @@ export default function Dashboard() {
     { nombre: 'Javier Hernandez', detalle: 'Entrada registrada en Torre A', hora: '08:05 AM', avatar: 'JH' },
   ];
 
-  const frentesEstado = [
-    { nombre: 'Complejo Centro', porcentaje: 85, color: 'bg-blue-500' },
-    { nombre: 'Parque Rio', porcentaje: 60, color: 'bg-green-500' },
-    { nombre: 'Nave Industrial Norte', porcentaje: 45, color: 'bg-yellow-500' },
-    { nombre: 'Centro Comercial Oeste', porcentaje: 20, color: 'bg-red-500' },
+  const asistenciaHoy = [
+    { proyecto: 'Cimentación Torre A', frente: 'Complejo Centro', presentes: 18, total: 20 },
+    { proyecto: 'Excavación Torre B', frente: 'Complejo Centro', presentes: 12, total: 15 },
+    { proyecto: 'Nivelación Paisaje', frente: 'Parque Rio', presentes: 8, total: 10 },
+    { proyecto: 'Instalación de Juegos', frente: 'Parque Rio', presentes: 5, total: 8 },
   ];
 
   const metricCards = [
@@ -33,9 +33,8 @@ export default function Dashboard() {
     { title: 'Frentes Activos', value: stats.frentesActivos, icon: MapPin, color: 'bg-orange-500' },
   ];
 
-  const avancePromedio = Math.round(
-    frentesEstado.reduce((acc, f) => acc + f.porcentaje, 0) / frentesEstado.length
-  );
+  const totalPresentes = asistenciaHoy.reduce((acc, p) => acc + p.presentes, 0);
+  const totalEsperados = asistenciaHoy.reduce((acc, p) => acc + p.total, 0);
 
   return (
     <div>
@@ -98,30 +97,42 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Estado de Frentes */}
+        {/* Asistencia de Hoy por Proyecto */}
         <div className="bg-white rounded-xl shadow-sm flex flex-col">
-          <div className="p-5 border-b">
-            <h2 className="text-lg font-semibold text-gray-800">Estado de Frentes</h2>
+          <div className="p-5 border-b flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-800">Asistencia de Hoy por Proyecto</h2>
+            <BarChart2 size={18} className="text-gray-400" />
           </div>
           <div className="flex-1 p-5 space-y-5">
-            {frentesEstado.map((frente, i) => (
-              <div key={i}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="font-medium text-gray-700">{frente.nombre}</span>
-                  <span className="text-gray-500">{frente.porcentaje}%</span>
+            {asistenciaHoy.map((item, i) => {
+              const porcentaje = Math.round((item.presentes / item.total) * 100);
+              const barColor = porcentaje >= 80 ? 'bg-green-500' : porcentaje >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+              return (
+                <div key={i}>
+                  <div className="flex justify-between items-baseline text-sm mb-1">
+                    <div>
+                      <span className="font-medium text-gray-800">{item.proyecto}</span>
+                      <span className="text-xs text-gray-400 ml-2">{item.frente}</span>
+                    </div>
+                    <span className="text-gray-600 font-medium tabular-nums">
+                      {item.presentes}<span className="text-gray-400 font-normal">/{item.total}</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`${barColor} h-2 rounded-full transition-all duration-500`}
+                      style={{ width: `${porcentaje}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                  <div
-                    className={`${frente.color} h-2.5 rounded-full transition-all duration-500`}
-                    style={{ width: `${frente.porcentaje}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between items-center">
-            <span className="text-sm text-gray-600">Avance promedio</span>
-            <span className="text-lg font-bold text-gray-800">{avancePromedio}%</span>
+            <span className="text-sm text-gray-600">Total presentes hoy</span>
+            <span className="text-lg font-bold text-gray-800">
+              {totalPresentes}<span className="text-sm font-normal text-gray-400">/{totalEsperados}</span>
+            </span>
           </div>
         </div>
 
