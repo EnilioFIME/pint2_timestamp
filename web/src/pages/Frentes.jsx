@@ -1,42 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Edit, Trash2, Plus, Search, X, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
 
-const initialFrentes = [
-  { id: 1, nombre: 'Complejo Centro', descripcion: 'Proyecto principal de edificio comercial', estado: 'Activo' },
-  { id: 2, nombre: 'Parque Rio', descripcion: 'Renovación de parque público', estado: 'Activo' },
-  { id: 3, nombre: 'Nave Industrial Norte', descripcion: 'Construcción de bodega', estado: 'Inactivo' },
-];
-
 export default function Frentes() {
-  const [frentes, setFrentes] = useState(initialFrentes);
+  const [frentes, setFrentes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingFrente, setEditingFrente] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const filteredFrentes = frentes.filter(frente =>
-    frente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    frente.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchFrentes();
+  }, []);
 
-  const handleDelete = (id) => {
-    setFrentes(frentes.filter(f => f.id !== id));
-    setConfirmDeleteId(null);
-    setToast({ type: 'success', text: 'Frente eliminado correctamente' });
+  const fetchFrentes = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes`);
+      if (res.ok) {
+        const data = await res.json();
+        setFrentes(data);
+      }
+    } catch (error) {
+      console.error('Error al cargar frentes:', error);
+      setToast({ type: 'error', text: 'Error de conexión con el servidor' });
+    }
   };
 
-  const handleSave = (frenteData) => {
+  const filteredFrentes = frentes.filter(frente =>
+    frente.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSave = async (frenteData) => {
     const isEditing = !!editingFrente;
-    if (isEditing) {
-      setFrentes(frentes.map(f => f.id === editingFrente.id ? { ...frenteData, id: editingFrente.id } : f));
-    } else {
-      setFrentes([...frentes, { ...frenteData, id: Date.now() }]);
+    const method = isEditing ? 'PUT' : 'POST';
+    const url = isEditing
+      ? `${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes/${editingFrente.id}`
+      : `${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes`;
+
+    // Transformación: React usa Texto ('Activo'/'Inactivo'), BD usa booleano
+    const payload = {
+      nombre: frenteData.nombre,
+      status: frenteData.estado === 'Activo'
+    };
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        await fetchFrentes();
+        setShowModal(false);
+        setEditingFrente(null);
+        setToast({ type: 'success', text: isEditing ? 'Frente actualizado correctamente' : 'Frente agregado correctamente' });
+      }
+    } catch (error) {
+      setToast({ type: 'error', text: 'Error al guardar el frente' });
     }
-    setShowModal(false);
-    setEditingFrente(null);
-    setToast({ type: 'success', text: isEditing ? 'Frente actualizado correctamente' : 'Frente agregado correctamente' });
   };
 
   return (
@@ -73,7 +96,6 @@ export default function Frentes() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
@@ -90,12 +112,11 @@ export default function Frentes() {
                 <>
                   <tr key={frente.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">{frente.nombre}</td>
-                    <td className="px-6 py-4 text-gray-600">{frente.descripcion}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        frente.estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        frente.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
-                        {frente.estado}
+                        {frente.status ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -112,7 +133,7 @@ export default function Frentes() {
                           className="text-red-600 hover:text-red-800 transition-colors"
                           title="Eliminar"
                         >
-                          <Trash2 size={18} />
+                          <span className="text-xs text-gray-400">Sólo desactivar</span>
                         </button>
                       </div>
                     </td>
@@ -165,8 +186,7 @@ export default function Frentes() {
 function FrenteModal({ frente, onSave, onClose }) {
   const [formData, setFormData] = useState({
     nombre: frente?.nombre || '',
-    descripcion: frente?.descripcion || '',
-    estado: frente?.estado || 'Activo',
+    estado: frente?.status === false ? 'Inactivo' : 'Activo',
   });
   const [error, setError] = useState('');
 
@@ -205,17 +225,6 @@ function FrenteModal({ frente, onSave, onClose }) {
                 autoFocus
               />
               {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-              <textarea
-                value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                placeholder="Breve descripción del sitio"
-                rows="3"
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
             </div>
 
             <div>

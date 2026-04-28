@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/frentes")
+@CrossOrigin(origins = "*") // Habilitamos CORS temporalmente para desarrollo con Vite (puerto 5173)
 public class FrenteController {
 
     private final FrenteService service;
@@ -24,15 +25,6 @@ public class FrenteController {
         return service.findAll();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Frente> getById(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(service.findById(id));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
     @PostMapping
     public ResponseEntity<Frente> create(@RequestBody Frente frente) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.save(frente));
@@ -42,16 +34,6 @@ public class FrenteController {
     public ResponseEntity<Frente> update(@PathVariable Long id, @RequestBody Frente frente) {
         try {
             return ResponseEntity.ok(service.update(id, frente));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        try {
-            service.delete(id);
-            return ResponseEntity.noContent().build();
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }

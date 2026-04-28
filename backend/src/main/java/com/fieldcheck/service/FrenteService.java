@@ -22,7 +22,7 @@ public class FrenteService {
 
     public Frente findById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Frente no encontrado: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Frente de obra no encontrado: " + id));
     }
 
     public Frente save(Frente frente) {
@@ -34,9 +34,5 @@ public class FrenteService {
         frente.setNombre(datos.getNombre());
         frente.setStatus(datos.getStatus());
         return repository.save(frente);
-    }
-
-    public void delete(Long id) {
-        repository.delete(findById(id));
     }
 }

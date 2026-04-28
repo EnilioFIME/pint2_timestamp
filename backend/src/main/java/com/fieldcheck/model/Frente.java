@@ -1,18 +1,20 @@
 package com.fieldcheck.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "Frentes")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Frente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 36)
+    @Column(nullable = false, unique = true, length = 36, updatable = false)
     private String uuid;
 
     @Column(nullable = false, length = 200)
@@ -21,13 +23,22 @@ public class Frente {
     @Column(nullable = false)
     private Boolean status = true;
 
-    @Column(nullable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "CreatedAt", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "UpdatedAt")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     private void prePersist() {
         if (uuid == null) uuid = UUID.randomUUID().toString();
-        if (timestamp == null) timestamp = LocalDateTime.now();
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    private void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     public Long getId() { return id; }
@@ -36,5 +47,6 @@ public class Frente {
     public void setNombre(String nombre) { this.nombre = nombre; }
     public Boolean getStatus() { return status; }
     public void setStatus(Boolean status) { this.status = status; }
-    public LocalDateTime getTimestamp() { return timestamp; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }
