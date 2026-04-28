@@ -1,146 +1,188 @@
 -- ==============================================================================
--- Azure SQL / SQL Server (T-SQL)
--- Esquema base para FieldCheck (control de asistencia)
+-- ELIMINACIÓN DINAMICA DE LLAVES FORANEAS Y OBJETOS
 -- ==============================================================================
+DECLARE @sql NVARCHAR(MAX) = N'';
 
--- ==============================================================================
--- ELIMINACION DE TABLAS 
--- ==============================================================================
-IF OBJECT_ID('dbo.Asistencias', 'U') IS NOT NULL DROP TABLE dbo.Asistencias;
+-- Destruir llaves foraneas para evitar bloqueos
+SELECT @sql += 'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(parent_object_id)) + 
+               '.' + QUOTENAME(OBJECT_NAME(parent_object_id)) + 
+               ' DROP CONSTRAINT ' + QUOTENAME(name) + ';' + CHAR(13)
+FROM sys.foreign_keys
+WHERE referenced_object_id IN (
+    OBJECT_ID('dbo.Proyectos'), OBJECT_ID('dbo.CercosGeograficos'),
+    OBJECT_ID('dbo.Registros'), OBJECT_ID('dbo.Usuarios'),
+    OBJECT_ID('dbo.TarjetasNFC'), OBJECT_ID('dbo.DatosBiometricosAWS'),
+    OBJECT_ID('dbo.Frentes')
+);
+EXEC sp_executesql @sql;
+GO
+
+-- Destruir Vistas y Tablas
+IF OBJECT_ID('dbo.vw_Asistencias', 'V') IS NOT NULL DROP VIEW dbo.vw_Asistencias;
+IF OBJECT_ID('dbo.Registros', 'U') IS NOT NULL DROP TABLE dbo.Registros;
 IF OBJECT_ID('dbo.Usuarios', 'U') IS NOT NULL DROP TABLE dbo.Usuarios;
 IF OBJECT_ID('dbo.Proyectos', 'U') IS NOT NULL DROP TABLE dbo.Proyectos;
-IF OBJECT_ID('dbo.TarjetasNFC', 'U') IS NOT NULL DROP TABLE dbo.TarjetasNFC;
-IF OBJECT_ID('dbo.DatosBiometricos', 'U') IS NOT NULL DROP TABLE dbo.DatosBiometricos;
-IF OBJECT_ID('dbo.Frentes', 'U') IS NOT NULL DROP TABLE dbo.Frentes;
 IF OBJECT_ID('dbo.CercosGeograficos', 'U') IS NOT NULL DROP TABLE dbo.CercosGeograficos;
+IF OBJECT_ID('dbo.Frentes', 'U') IS NOT NULL DROP TABLE dbo.Frentes;
+IF OBJECT_ID('dbo.DatosBiometricosAWS', 'U') IS NOT NULL DROP TABLE dbo.DatosBiometricosAWS;
+IF OBJECT_ID('dbo.TarjetasNFC', 'U') IS NOT NULL DROP TABLE dbo.TarjetasNFC;
 GO
 
 -- ==============================================================================
--- 1. TABLAS INDEPENDIENTES
+-- TABLAS MAESTRAS / CATALOGOS
 -- ==============================================================================
 
--- Tabla para Tarjetas NFC
 CREATE TABLE dbo.TarjetasNFC (
-    id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    uuid NVARCHAR(36) NOT NULL CONSTRAINT UQ_TarjetasNFC_uuid UNIQUE,
-    nfc_uuid NVARCHAR(100) NOT NULL CONSTRAINT UQ_TarjetasNFC_nfc_uuid UNIQUE,
-    status BIT NOT NULL CONSTRAINT DF_TarjetasNFC_status DEFAULT (1),
-    created_at DATETIME2(3) NOT NULL CONSTRAINT DF_TarjetasNFC_created_at DEFAULT (SYSUTCDATETIME())
+    Id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    UUID NVARCHAR(36) NOT NULL CONSTRAINT UQ_TarjetasNFC_UUID UNIQUE,
+    NfcUid NVARCHAR(100) NOT NULL CONSTRAINT UQ_TarjetasNFC_NfcUid UNIQUE,
+    Status BIT NOT NULL CONSTRAINT DF_TarjetasNFC_Status DEFAULT (1),
+    CreatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_TarjetasNFC_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    UpdatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_TarjetasNFC_UpdatedAt DEFAULT (SYSUTCDATETIME())
 );
-GO
 
--- Tabla para Datos Biométricos (Entidad basada en IdPersonaAzure)
-CREATE TABLE dbo.DatosBiometricos (
-    id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    uuid NVARCHAR(36) NOT NULL CONSTRAINT UQ_DatosBiometricos_uuid UNIQUE,
-    id_persona_azure NVARCHAR(100) NOT NULL CONSTRAINT UQ_DatosBiometricos_id_persona_azure UNIQUE,
-    status BIT NOT NULL CONSTRAINT DF_DatosBiometricos_status DEFAULT (1),
-    [timestamp] DATETIME2(3) NOT NULL CONSTRAINT DF_DatosBiometricos_timestamp DEFAULT (SYSUTCDATETIME())
+CREATE TABLE dbo.DatosBiometricosAWS (
+    Id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    UUID NVARCHAR(36) NOT NULL CONSTRAINT UQ_DatosBiometricosAWS_UUID UNIQUE,
+    RekognitionFaceId NVARCHAR(100) NOT NULL CONSTRAINT UQ_DatosBiometricosAWS_FaceId UNIQUE,
+    Status BIT NOT NULL CONSTRAINT DF_DatosBiometricosAWS_Status DEFAULT (1),
+    CreatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_DatosBiometricosAWS_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    UpdatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_DatosBiometricosAWS_UpdatedAt DEFAULT (SYSUTCDATETIME())
 );
-GO
 
--- Tabla para Frentes
 CREATE TABLE dbo.Frentes (
-    id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    uuid NVARCHAR(36) NOT NULL CONSTRAINT UQ_Frentes_uuid UNIQUE,
-    nombre NVARCHAR(200) NOT NULL,
-    status BIT NOT NULL CONSTRAINT DF_Frentes_status DEFAULT (1),
-    [timestamp] DATETIME2(3) NOT NULL CONSTRAINT DF_Frentes_timestamp DEFAULT (SYSUTCDATETIME())
+    Id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    UUID NVARCHAR(36) NOT NULL CONSTRAINT UQ_Frentes_UUID UNIQUE,
+    Nombre NVARCHAR(200) NOT NULL,
+    Status BIT NOT NULL CONSTRAINT DF_Frentes_Status DEFAULT (1),
+    CreatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Frentes_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    UpdatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Frentes_UpdatedAt DEFAULT (SYSUTCDATETIME())
 );
-GO
 
--- Tabla para Cercos Geograficos
 CREATE TABLE dbo.CercosGeograficos (
-    id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    uuid NVARCHAR(36) NOT NULL CONSTRAINT UQ_CercosGeograficos_uuid UNIQUE,
-    -- Coordenadas del cerco geográfico.
-    latitud DECIMAL(10,7) NOT NULL CONSTRAINT CHK_CercosGeograficos_latitud CHECK (latitud BETWEEN -90.0 AND 90.0),
-    longitud DECIMAL(10,7) NOT NULL CONSTRAINT CHK_CercosGeograficos_longitud CHECK (longitud BETWEEN -180.0 AND 180.0),
-    radio_metros DECIMAL(6,2) NOT NULL CONSTRAINT CHK_CercosGeograficos_radio CHECK (radio_metros > 0),
-    status BIT NOT NULL CONSTRAINT DF_CercosGeograficos_status DEFAULT (1),
-    [timestamp] DATETIME2(3) NOT NULL CONSTRAINT DF_CercosGeograficos_timestamp DEFAULT (SYSUTCDATETIME())
+    Id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    UUID NVARCHAR(36) NOT NULL CONSTRAINT UQ_CercosGeograficos_UUID UNIQUE,
+    Latitud DECIMAL(10,7) NOT NULL CONSTRAINT CHK_Cercos_Latitud CHECK (Latitud BETWEEN -90.0 AND 90.0),
+    Longitud DECIMAL(10,7) NOT NULL CONSTRAINT CHK_Cercos_Longitud CHECK (Longitud BETWEEN -180.0 AND 180.0),
+    RadioMetros DECIMAL(6,2) NOT NULL CONSTRAINT CHK_Cercos_Radio CHECK (RadioMetros > 0),
+    Status BIT NOT NULL CONSTRAINT DF_CercosGeograficos_Status DEFAULT (1),
+    CreatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Cercos_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    UpdatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Cercos_UpdatedAt DEFAULT (SYSUTCDATETIME())
 );
-GO
 
--- ==============================================================================
--- 2. TABLAS CON DEPENDENCIAS DE PRIMER NIVEL
--- ==============================================================================
-
--- Tabla principal de Usuarios
 CREATE TABLE dbo.Usuarios (
-    id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    uuid NVARCHAR(36) NOT NULL CONSTRAINT UQ_Usuarios_uuid UNIQUE,
-    tarjeta_nfc_id BIGINT NULL,
-    dato_biometrico_id BIGINT NULL,
-    rol NVARCHAR(20) NOT NULL CONSTRAINT CHK_Usuarios_rol CHECK (rol IN ('Empleado', 'Checador', 'Administrador')),
-    numero_empleado NVARCHAR(6) NOT NULL CONSTRAINT UQ_Usuarios_numero_empleado UNIQUE,
-    email NVARCHAR(60) NULL CONSTRAINT UQ_Usuarios_email UNIQUE,
-    password NVARCHAR(255) NULL,
-    apellido NVARCHAR(100) NOT NULL,
-    nombre NVARCHAR(100) NOT NULL,
-    status BIT NOT NULL CONSTRAINT DF_Usuarios_status DEFAULT (1),
-    modified_by NVARCHAR(60) NULL,
-    [timestamp] DATETIME2(3) NOT NULL CONSTRAINT DF_Usuarios_timestamp DEFAULT (SYSUTCDATETIME()),
+    Id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    UUID NVARCHAR(36) NOT NULL CONSTRAINT UQ_Usuarios_UUID UNIQUE,
+    IdTarjetasNFC BIGINT NULL,
+    IdDatosBiometricos BIGINT NULL,
+    Rol NVARCHAR(20) NOT NULL CONSTRAINT CHK_Usuarios_Rol CHECK (Rol IN ('Empleado', 'Checador', 'Administrador')),
+    NumeroEmpleado NVARCHAR(6) NOT NULL CONSTRAINT UQ_Usuarios_NumeroEmpleado UNIQUE,
+    Email NVARCHAR(60) NULL, 
+    Apellido NVARCHAR(100) NOT NULL,
+    Nombre NVARCHAR(100) NOT NULL,
+    Status BIT NOT NULL CONSTRAINT DF_Usuarios_Status DEFAULT (1),
+    CreatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Usuarios_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    UpdatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Usuarios_UpdatedAt DEFAULT (SYSUTCDATETIME())
 
-    CONSTRAINT FK_Usuarios_TarjetasNFC FOREIGN KEY (tarjeta_nfc_id) 
-        REFERENCES dbo.TarjetasNFC(id) ON DELETE SET NULL,
-    CONSTRAINT FK_Usuarios_DatosBiometricos FOREIGN KEY (dato_biometrico_id) 
-        REFERENCES dbo.DatosBiometricos(id) ON DELETE SET NULL,
-
-    -- REGLAS DE NEGOCIO
-    CONSTRAINT CHK_Usuarios_reglas_rol CHECK (
-        (rol = 'Empleado' AND email IS NULL AND (dato_biometrico_id IS NOT NULL OR tarjeta_nfc_id IS NOT NULL)) OR 
-        (rol IN ('Checador', 'Administrador') AND email IS NOT NULL AND password IS NOT NULL)
+    CONSTRAINT FK_Usuarios_TarjetasNFC FOREIGN KEY (IdTarjetasNFC) 
+        REFERENCES dbo.TarjetasNFC(Id) ON DELETE SET NULL,
+    CONSTRAINT FK_Usuarios_DatosBiometricos FOREIGN KEY (IdDatosBiometricos) 
+        REFERENCES dbo.DatosBiometricosAWS(Id) ON DELETE SET NULL,
+    CONSTRAINT CHK_Usuarios_Reglas_Rol CHECK (
+        (Rol = 'Empleado' AND Email IS NULL AND (IdDatosBiometricos IS NOT NULL AND IdTarjetasNFC IS NOT NULL)) OR 
+        (Rol IN ('Checador', 'Administrador') AND Email IS NOT NULL)
     )
 );
-GO
 
-CREATE INDEX IX_Usuarios_numero_empleado ON dbo.Usuarios (numero_empleado);
-CREATE INDEX IX_Usuarios_rol ON dbo.Usuarios (rol);
-GO
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Usuarios_Email 
+ON dbo.Usuarios (Email) 
+WHERE Email IS NOT NULL;
 
--- Tabla para Proyectos
 CREATE TABLE dbo.Proyectos (
-    id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    uuid NVARCHAR(36) NOT NULL CONSTRAINT UQ_Proyectos_uuid UNIQUE,
-    frente_id BIGINT NOT NULL,
-    cerco_id BIGINT NULL CONSTRAINT UQ_Proyectos_cerco_id UNIQUE,
-    nombre NVARCHAR(200) NOT NULL,
-    status BIT NOT NULL CONSTRAINT DF_Proyectos_status DEFAULT (1),
-    [timestamp] DATETIME2(3) NOT NULL CONSTRAINT DF_Proyectos_timestamp DEFAULT (SYSUTCDATETIME()),
+    Id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    UUID NVARCHAR(36) NOT NULL CONSTRAINT UQ_Proyectos_UUID UNIQUE,
+    IdFrente BIGINT NOT NULL,
+    IdCerco BIGINT NULL CONSTRAINT UQ_Proyectos_IdCerco UNIQUE,
+    Nombre NVARCHAR(200) NOT NULL,
+    Status BIT NOT NULL CONSTRAINT DF_Proyectos_Status DEFAULT (1),
+    CreatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Proyectos_CreatedAt DEFAULT (SYSUTCDATETIME()),
+    UpdatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Proyectos_UpdatedAt DEFAULT (SYSUTCDATETIME())
 
-    CONSTRAINT FK_Proyectos_Frentes FOREIGN KEY (frente_id) 
-        REFERENCES dbo.Frentes(id) ON DELETE NO ACTION,
-    CONSTRAINT FK_Proyectos_CercosGeograficos FOREIGN KEY (cerco_id) 
-        REFERENCES dbo.CercosGeograficos(id) ON DELETE SET NULL
+    CONSTRAINT FK_Proyectos_Frentes FOREIGN KEY (IdFrente) 
+        REFERENCES dbo.Frentes(Id) ON DELETE NO ACTION,
+    CONSTRAINT FK_Proyectos_Cercos FOREIGN KEY (IdCerco) 
+        REFERENCES dbo.CercosGeograficos(Id) ON DELETE SET NULL
 );
 GO
 
-CREATE INDEX IX_Proyectos_frente_id ON dbo.Proyectos (frente_id);
-GO
-
 -- ==============================================================================
--- 3. TABLA TRANSACCIONAL
+-- TABLA TRANSACCIONAL (Hechos puros, Inmutables)
 -- ==============================================================================
 
--- Tabla para el registro de Asistencias
-CREATE TABLE dbo.Asistencias (
-    id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-    uuid NVARCHAR(36) NOT NULL CONSTRAINT UQ_Asistencias_uuid UNIQUE,
-    usuario_id BIGINT NOT NULL,
-    proyecto_id BIGINT NOT NULL,
-    tipo_verificacion NVARCHAR(20) NOT NULL,
-    metodo NVARCHAR(20) NOT NULL,
-    confianza DECIMAL(5,2) NULL CONSTRAINT CHK_Asistencias_confianza CHECK (confianza BETWEEN 0.0 AND 100.0),
-    [timestamp] DATETIME2(3) NOT NULL CONSTRAINT DF_Asistencias_timestamp DEFAULT (SYSUTCDATETIME()),
+CREATE TABLE dbo.Registros (
+    Id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    UUID NVARCHAR(100) NOT NULL CONSTRAINT UQ_Registros_UUID UNIQUE,
+    IdUsuario BIGINT NOT NULL,
+    IdProyecto BIGINT NOT NULL,
+    TipoVerificacion NVARCHAR(20) NOT NULL,
+    TipoRegistro NVARCHAR(20) NOT NULL CONSTRAINT CHK_Registros_Tipo CHECK (TipoRegistro IN ('Entrada', 'Salida')),
+    Confianza DECIMAL(5,2) NULL CONSTRAINT CHK_Registros_Confianza CHECK (Confianza BETWEEN 0.0 AND 100.0),
+    CreatedAt DATETIME2(3) NOT NULL CONSTRAINT DF_Registros_CreatedAt DEFAULT (SYSUTCDATETIME()),
 
-    CONSTRAINT FK_Asistencias_Usuarios FOREIGN KEY (usuario_id) 
-        REFERENCES dbo.Usuarios(id) ON DELETE NO ACTION,
-    CONSTRAINT FK_Asistencias_Proyectos FOREIGN KEY (proyecto_id) 
-        REFERENCES dbo.Proyectos(id) ON DELETE NO ACTION
+    CONSTRAINT FK_Registros_Usuarios FOREIGN KEY (IdUsuario) 
+        REFERENCES dbo.Usuarios(Id) ON DELETE NO ACTION,
+    CONSTRAINT FK_Registros_Proyectos FOREIGN KEY (IdProyecto) 
+        REFERENCES dbo.Proyectos(Id) ON DELETE NO ACTION
 );
 GO
 
-CREATE INDEX IX_Asistencias_usuario_timestamp ON dbo.Asistencias (usuario_id, [timestamp] DESC);
-CREATE INDEX IX_Asistencias_proyecto_timestamp ON dbo.Asistencias (proyecto_id, [timestamp] DESC);
+
+-- ==============================================================================
+-- CREACIÓN DE VISTA CONSOLIDADA
+-- ==============================================================================
+
+CREATE VIEW dbo.vw_Asistencias AS
+SELECT 
+    e.UUID,
+    e.Id,
+    e.IdUsuario,
+    e.IdProyecto,
+    e.CreatedAt AS Entrada,
+    s.CreatedAt AS Salida,
+    
+    -- LOGICA CONDICIONAL DE ESTADOS
+    CASE 
+        WHEN s.CreatedAt IS NOT NULL THEN 'Completada'
+        WHEN s.CreatedAt IS NULL AND CAST(e.CreatedAt AS DATE) = CAST(SYSUTCDATETIME() AS DATE) THEN 'En Curso'
+        ELSE 'Inconsistente'
+    END AS Estado,
+
+    -- CALCULO DE HORAS TOTALES
+    CAST(DATEDIFF(MINUTE, e.CreatedAt, s.CreatedAt) / 60.0 AS DECIMAL(5,2)) AS HorasTotales
+
+FROM 
+    dbo.Registros e
+
+-- OUTER APPLY permite hacer match con la "Salida" más cercana posterior a la "Entrada"
+OUTER APPLY (
+    SELECT TOP 1 sal.CreatedAt
+    FROM dbo.Registros sal
+    WHERE sal.IdUsuario = e.IdUsuario
+      AND sal.IdProyecto = e.IdProyecto
+      AND sal.TipoRegistro = 'Salida'
+      AND sal.CreatedAt >= e.CreatedAt
+    ORDER BY sal.CreatedAt ASC 
+) s
+WHERE 
+    e.TipoRegistro = 'Entrada';
+GO
+
+-- ==============================================================================
+-- INDICES DE OPTIMIZACIÓN
+-- ==============================================================================
+CREATE INDEX IX_Usuarios_NumeroEmpleado ON dbo.Usuarios (NumeroEmpleado);
+CREATE INDEX IX_Usuarios_Rol ON dbo.Usuarios (Rol);
+CREATE INDEX IX_Proyectos_IdFrente ON dbo.Proyectos (IdFrente);
+CREATE INDEX IX_Registros_Usuario_CreatedAt ON dbo.Registros (IdUsuario, CreatedAt DESC);
+CREATE INDEX IX_Registros_Proyecto_CreatedAt ON dbo.Registros (IdProyecto, CreatedAt DESC);
 GO
