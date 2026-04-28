@@ -22,7 +22,11 @@ public class FrenteController {
 
     @GetMapping
     public List<Frente> getAll() {
-        return service.findAll();
+        System.out.println("\n---> [1] RECIBIENDO PETICION EN SPRING BOOT...");
+        List<Frente> frentes = service.findAll();
+        System.out.println("---> [2] CONSULTA A AZURE SQL TERMINADA CON EXITO.");
+        System.out.println("---> [3] SE ENCONTRARON " + frentes.size() + " FRENTES. DEVOLVIENDO A REACT...\n");
+        return frentes;
     }
 
     @PostMapping

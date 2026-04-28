@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Edit, Trash2, Plus, Search, X, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
 
@@ -109,8 +109,8 @@ export default function Frentes() {
               </tr>
             ) : (
               filteredFrentes.map((frente) => (
-                <>
-                  <tr key={frente.id} className="hover:bg-gray-50">
+                <Fragment key={frente.id}>
+                  <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">{frente.nombre}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -164,7 +164,7 @@ export default function Frentes() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))
             )}
           </tbody>

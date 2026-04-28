@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { Search, Plus, Edit, Trash2, X, Mail, Shield, CheckCircle, XCircle, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
 
@@ -99,8 +99,8 @@ export default function Usuarios() {
               </tr>
             ) : (
               filteredUsuarios.map((usuario) => (
-                <>
-                  <tr key={usuario.id} className="hover:bg-gray-50">
+                <Fragment key={usuario.id}>
+                  <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Mail size={16} className="text-gray-400" />
@@ -165,7 +165,7 @@ export default function Usuarios() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))
             )}
           </tbody>
