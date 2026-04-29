@@ -18,7 +18,7 @@ public class AwsRekognitionConfig {
     private String secretAccessKey;
 
     @Value("${aws.region}")
-    private String region;
+    private String region;  
 
     @Bean
     public RekognitionClient rekognitionClient() {
