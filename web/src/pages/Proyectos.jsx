@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Edit, Trash2, Plus, Search, AlertTriangle } from 'lucide-react';
+import Toast from '../components/Toast';
 
 const initialProjects = [
   { id: 1, nombre: 'Cimentación Torre A', frenteObra: 'Complejo Centro', estado: 'En Progreso' },
@@ -16,6 +17,7 @@ export default function Proyectos() {
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [toast, setToast] = useState(null);
   const [frentesObra] = useState(['Complejo Centro', 'Parque Rio', 'Nave Industrial Norte']);
 
   const filteredProjects = projects.filter(project =>
@@ -26,16 +28,19 @@ export default function Proyectos() {
   const handleDelete = (id) => {
     setProjects(projects.filter(p => p.id !== id));
     setConfirmDeleteId(null);
+    setToast({ type: 'success', text: 'Proyecto eliminado correctamente' });
   };
 
   const handleSave = (projectData) => {
-    if (editingProject) {
+    const isEditing = !!editingProject;
+    if (isEditing) {
       setProjects(projects.map(p => p.id === editingProject.id ? { ...projectData, id: editingProject.id } : p));
     } else {
       setProjects([...projects, { ...projectData, id: Date.now() }]);
     }
     setShowModal(false);
     setEditingProject(null);
+    setToast({ type: 'success', text: isEditing ? 'Proyecto actualizado correctamente' : 'Proyecto creado correctamente' });
   };
 
   const getEstadoColor = (estado) => {
@@ -157,6 +162,7 @@ export default function Proyectos() {
           onClose={() => { setShowModal(false); setEditingProject(null); }}
         />
       )}
+      <Toast message={toast} onClose={() => setToast(null)} />
     </div>
   );
 }
