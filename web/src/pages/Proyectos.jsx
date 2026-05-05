@@ -1,56 +1,108 @@
-import { useState } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Edit, Trash2, Plus, Search, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
 
-const initialProjects = [
-  { id: 1, nombre: 'Cimentación Torre A', frenteObra: 'Complejo Centro', estado: 'En Progreso' },
-  { id: 2, nombre: 'Excavación Torre B', frenteObra: 'Complejo Centro', estado: 'En Progreso' },
-  { id: 3, nombre: 'Nivelación Paisaje', frenteObra: 'Parque Rio', estado: 'Completado' },
-  { id: 4, nombre: 'Instalación de Juegos', frenteObra: 'Parque Rio', estado: 'Pendiente' },
-];
-
-const estadoOptions = ['Pendiente', 'En Progreso', 'Completado', 'Cancelado'];
-
 export default function Proyectos() {
-  const [projects, setProjects] = useState(initialProjects);
+  const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
-  const [frentesObra] = useState(['Complejo Centro', 'Parque Rio', 'Nave Industrial Norte']);
+  const [frentesObra, setFrentesObra] = useState([]);
+  const [cercos, setCercos] = useState([]);
+  const estadoOptions = ['Activo', 'Inactivo'];
+
+  useEffect(() => {
+    fetchProyectos();
+    fetchFrentes();
+    fetchCercos();
+  }, []);
+
+  const fetchProyectos = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/proyectos`);
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Error al cargar proyectos:', error);
+      setToast({ type: 'error', text: 'Error de conexión con el servidor' });
+    }
+  };
+
+  const fetchFrentes = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes`);
+      if (res.ok) {
+        const data = await res.json();
+        setFrentesObra(data); // Guardamos el objeto completo (id y nombre)
+      }
+    } catch (error) {
+      console.error('Error al cargar frentes:', error);
+    }
+  };
+
+  const fetchCercos = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/cercos`);
+      if (res.ok) {
+        const data = await res.json();
+        setCercos(data);
+      }
+    } catch (error) {
+      console.error('Error al cargar cercos:', error);
+    }
+  };
 
   const filteredProjects = projects.filter(project =>
-    project.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.frenteObra.toLowerCase().includes(searchTerm.toLowerCase())
+    project.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleSave = async (projectData) => {
+    const isEditing = !!editingProject;
+    const method = isEditing ? 'PUT' : 'POST';
+    const url = isEditing
+      ? `${import.meta.env.VITE_BACKEND_BASE_URL}/api/proyectos/${editingProject.id}`
+      : `${import.meta.env.VITE_BACKEND_BASE_URL}/api/proyectos`;
+
+    // Transformación: React usa Texto ('Activo'/'Inactivo'), BD usa booleano
+    const payload = {
+      nombre: projectData.nombre,
+      idFrente: projectData.idFrente || null,
+      frente: projectData.idFrente ? { id: projectData.idFrente } : null, // Mapeo redundante por si Spring Boot espera la entidad anidada
+      idCerco: projectData.idCerco || null,
+      cerco: projectData.idCerco ? { id: projectData.idCerco } : null,
+      status: projectData.estado === 'Activo'
+    };
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        await fetchProyectos();
+        setShowModal(false);
+        setEditingProject(null);
+        setToast({ type: 'success', text: isEditing ? 'Proyecto actualizado correctamente' : 'Proyecto agregado correctamente' });
+      }
+    } catch (error) {
+      setToast({ type: 'error', text: 'Error al guardar el proyecto' });
+    }
+  };
 
   const handleDelete = (id) => {
     setProjects(projects.filter(p => p.id !== id));
     setConfirmDeleteId(null);
-    setToast({ type: 'success', text: 'Proyecto eliminado correctamente' });
-  };
-
-  const handleSave = (projectData) => {
-    const isEditing = !!editingProject;
-    if (isEditing) {
-      setProjects(projects.map(p => p.id === editingProject.id ? { ...projectData, id: editingProject.id } : p));
-    } else {
-      setProjects([...projects, { ...projectData, id: Date.now() }]);
-    }
-    setShowModal(false);
-    setEditingProject(null);
-    setToast({ type: 'success', text: isEditing ? 'Proyecto actualizado correctamente' : 'Proyecto creado correctamente' });
+    setToast({ type: 'success', text: 'Proyecto ocultado localmente (Falta endpoint DELETE en Backend)' });
   };
 
   const getEstadoColor = (estado) => {
-    switch (estado) {
-      case 'Pendiente': return 'bg-yellow-100 text-yellow-800';
-      case 'En Progreso': return 'bg-blue-100 text-blue-800';
-      case 'Completado': return 'bg-green-100 text-green-800';
-      case 'Cancelado': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+    return estado === 'Activo' || estado === true ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
   return (
@@ -81,6 +133,7 @@ export default function Proyectos() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre del Proyecto</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frente de Obra</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cerco</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
             </tr>
@@ -88,17 +141,22 @@ export default function Proyectos() {
           <tbody className="divide-y divide-gray-200">
             {filteredProjects.length === 0 ? (
               <tr>
-                <td colSpan="4" className="px-6 py-8 text-center text-gray-500">No hay proyectos registrados</td>
+                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No hay proyectos registrados</td>
               </tr>
             ) : (
               filteredProjects.map((project) => (
                 <>
                   <tr key={project.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">{project.nombre}</td>
-                    <td className="px-6 py-4 text-gray-600">{project.frenteObra}</td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {project.frente?.nombre || frentesObra.find(f => f.id === project.idFrente)?.nombre || 'Sin asignar'}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {project.cerco ? `Cerco #${project.cerco.id}` : (project.idCerco ? `Cerco #${project.idCerco}` : 'Sin asignar')}
+                    </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(project.estado)}`}>
-                        {project.estado}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(project.status !== undefined ? project.status : project.estado)}`}>
+                        {(project.status === true || project.estado === 'Activo') ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -122,7 +180,7 @@ export default function Proyectos() {
                   </tr>
                   {confirmDeleteId === project.id && (
                     <tr key={`confirm-${project.id}`} className="bg-red-50">
-                      <td colSpan="4" className="px-6 py-3">
+                      <td colSpan="5" className="px-6 py-3">
                         <div className="flex items-center gap-3">
                           <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
                           <span className="text-sm text-red-700">
@@ -157,6 +215,7 @@ export default function Proyectos() {
         <ProjectModal
           project={editingProject}
           frentesObra={frentesObra}
+          cercos={cercos}
           estadoOptions={estadoOptions}
           onSave={handleSave}
           onClose={() => { setShowModal(false); setEditingProject(null); }}
@@ -167,11 +226,18 @@ export default function Proyectos() {
   );
 }
 
-function ProjectModal({ project, frentesObra, estadoOptions, onSave, onClose }) {
+function ProjectModal({ project, frentesObra, cercos, estadoOptions, onSave, onClose }) {
+  const getInitialFrente = () => {
+    if (project?.idFrente) return project.idFrente;
+    if (project?.frente?.id) return project.frente.id;
+    return frentesObra?.length > 0 ? frentesObra[0].id : '';
+  };
+
   const [formData, setFormData] = useState({
     nombre: project?.nombre || '',
-    frenteObra: project?.frenteObra || frentesObra[0] || '',
-    estado: project?.estado || 'Pendiente',
+    idFrente: getInitialFrente(),
+    idCerco: project?.idCerco || project?.cerco?.id || '',
+    estado: (project?.status === false || project?.estado === 'Inactivo') ? 'Inactivo' : 'Activo',
   });
   const [error, setError] = useState('');
 
@@ -210,12 +276,27 @@ function ProjectModal({ project, frentesObra, estadoOptions, onSave, onClose }) 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Frente de Obra</label>
               <select
-                value={formData.frenteObra}
-                onChange={(e) => setFormData({ ...formData, frenteObra: e.target.value })}
+                value={formData.idFrente}
+                onChange={(e) => setFormData({ ...formData, idFrente: e.target.value ? Number(e.target.value) : '' })}
                 className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
+                <option value="">Selecciona un frente...</option>
                 {frentesObra.map((frente) => (
-                  <option key={frente} value={frente}>{frente}</option>
+                  <option key={frente.id} value={frente.id}>{frente.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cerco Geográfico (Opcional)</label>
+              <select
+                value={formData.idCerco}
+                onChange={(e) => setFormData({ ...formData, idCerco: e.target.value ? Number(e.target.value) : '' })}
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Sin asignar</option>
+                {cercos.map((cerco) => (
+                  <option key={cerco.id} value={cerco.id}>Cerco #{cerco.id} (Radio: {cerco.radioMetros}m)</option>
                 ))}
               </select>
             </div>

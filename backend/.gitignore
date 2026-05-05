@@ -1,2 +1,2 @@
 # Ignorar credenciales locales
-src/main/resources/application.properties
+resources/application.properties
