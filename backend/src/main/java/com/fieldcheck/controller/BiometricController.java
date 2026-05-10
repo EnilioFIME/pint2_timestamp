@@ -39,4 +39,10 @@ public class BiometricController {
             return VerificationResult.failed(0f, "ERROR_READING_FILE");
         }
     }
+
+    @PostMapping("/init")
+public String initCollection() {
+    biometricService.initializeCollection();
+    return "Colección creada en AWS correctamente";
+}
 }
