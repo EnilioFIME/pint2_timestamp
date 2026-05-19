@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la \"c:\\\\Users\\\\nicol\\\\OneDrive\\\\Documentos\\\\Facultad\\\\Noveno Smestre\\\\PROYECTO INTEGRADOR 2\\\\pint2_timestamp\\\\\")",
+      "Read(//c/Users/nicol/OneDrive/Documentos/Facultad/Noveno Smestre/PROYECTO INTEGRADOR 2/**)"
+    ]
+  }
+}

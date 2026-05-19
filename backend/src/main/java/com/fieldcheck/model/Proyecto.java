@@ -1,6 +1,7 @@
 package com.fieldcheck.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,9 +18,11 @@ public class Proyecto {
     @Column(nullable = false, unique = true, length = 36, updatable = false)
     private String uuid;
 
+    // Campo de escritura — usado por ProyectoService en save/update
     @Column(name = "IdFrente", nullable = false)
     private Long idFrente;
 
+    // Campo de escritura — usado por ProyectoService en save/update
     @Column(name = "IdCerco")
     private Long idCerco;
 
@@ -34,6 +37,21 @@ public class Proyecto {
 
     @Column(name = "UpdatedAt")
     private LocalDateTime updatedAt;
+
+    // Relación de lectura — Hibernate la carga automáticamente, Jackson la serializa
+    // insertable/updatable=false porque la columna ya está mapeada en idFrente
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "IdFrente", insertable = false, updatable = false)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Frente frente;
+
+    // Relación de lectura — misma razón que frente
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "IdCerco", insertable = false, updatable = false)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private CercoGeografico cerco;
 
     @PrePersist
     private void prePersist() {
@@ -59,4 +77,6 @@ public class Proyecto {
     public void setStatus(Boolean status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public Frente getFrente() { return frente; }
+    public CercoGeografico getCerco() { return cerco; }
 }

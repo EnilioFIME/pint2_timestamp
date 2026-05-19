@@ -1,11 +1,11 @@
 package com.fieldcheck.service;
 
+import com.fieldcheck.exception.ResourceNotFoundException;
 import com.fieldcheck.model.Proyecto;
 import com.fieldcheck.repository.ProyectoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 public class ProyectoService {
@@ -22,7 +22,7 @@ public class ProyectoService {
 
     public Proyecto findById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Frente de obra no encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Proyecto no encontrado: " + id));
     }
 
     public Proyecto save(Proyecto proyecto) {
@@ -36,5 +36,10 @@ public class ProyectoService {
         proyecto.setIdFrente(datos.getIdFrente());
         proyecto.setIdCerco(datos.getIdCerco());
         return repository.save(proyecto);
+    }
+
+    public void delete(Long id) {
+        Proyecto proyecto = findById(id);
+        repository.delete(proyecto);
     }
 }

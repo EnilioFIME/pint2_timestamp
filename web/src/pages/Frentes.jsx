@@ -31,6 +31,26 @@ export default function Frentes() {
     frente.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setConfirmDeleteId(null);
+        await fetchFrentes();
+        setToast({ type: 'success', text: 'Frente eliminado correctamente' });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setConfirmDeleteId(null);
+        setToast({ type: 'error', text: err.message || 'No se puede eliminar: tiene proyectos asociados' });
+      }
+    } catch {
+      setConfirmDeleteId(null);
+      setToast({ type: 'error', text: 'Error de conexión al eliminar' });
+    }
+  };
+
   const handleSave = async (frenteData) => {
     const isEditing = !!editingFrente;
     const method = isEditing ? 'PUT' : 'POST';
@@ -133,7 +153,7 @@ export default function Frentes() {
                           className="text-red-600 hover:text-red-800 transition-colors"
                           title="Eliminar"
                         >
-                          <span className="text-xs text-gray-400">Sólo desactivar</span>
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>

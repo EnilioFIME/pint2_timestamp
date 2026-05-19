@@ -12,4 +12,13 @@ SELECT
       AND p.IdCerco = c.Id
 
 SELECT *
-  FROM dbo.CercosGeograficos
+  FROM dbo.Usuarios
+
+SELECT *
+  FROM dbo.vw_Asistencias
+
+SELECT *
+  FROM dbo.Registros
+
+SELECT *
+  FROM dbo.

@@ -1,51 +1,95 @@
-import { useState, Fragment } from 'react';
-import { Search, Plus, Edit, Trash2, X, Mail, Shield, CheckCircle, XCircle, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { useState, useEffect, Fragment } from 'react';
+import { Search, Plus, Edit, Trash2, X, Mail, Shield, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
 
-const initialUsuarios = [
-  { id: 1, email: 'admin@workstamp.com', rol: 'Administrador', estado: 'Activo', ultimoAcceso: '2026-02-11 09:30 AM' },
-  { id: 2, email: 'checker1@workstamp.com', rol: 'Verificador', estado: 'Activo', ultimoAcceso: '2026-02-10 03:15 PM' },
-  { id: 3, email: 'supervisor@workstamp.com', rol: 'Administrador', estado: 'Inactivo', ultimoAcceso: '2026-02-05 11:20 AM' },
-];
+const BASE = import.meta.env.VITE_BACKEND_BASE_URL;
 
-const rolesOptions = ['Administrador', 'Verificador'];
-const estadosOptions = ['Activo', 'Inactivo'];
+// UI muestra "Verificador" pero la BD usa "Checador"
+const ROLES_UI = ['Administrador', 'Verificador'];
+const toDbRol = (uiRol) => uiRol === 'Verificador' ? 'Checador' : uiRol;
+const toUiRol = (dbRol) => dbRol === 'Checador' ? 'Verificador' : dbRol;
 
 export default function Usuarios() {
-  const [usuarios, setUsuarios] = useState(initialUsuarios);
+  const [usuarios, setUsuarios] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const filteredUsuarios = usuarios.filter(usuario =>
-    usuario.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    usuario.rol.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => { fetchUsuarios(); }, []);
 
-  const handleDelete = (id) => {
-    setUsuarios(usuarios.filter(u => u.id !== id));
-    setConfirmDeleteId(null);
-    setToast({ type: 'success', text: 'Usuario eliminado correctamente' });
-  };
-
-  const handleSave = (usuarioData) => {
-    const isEditing = !!editingUser;
-    if (isEditing) {
-      setUsuarios(usuarios.map(u =>
-        u.id === editingUser.id ? { ...usuarioData, id: editingUser.id, ultimoAcceso: u.ultimoAcceso } : u
-      ));
-    } else {
-      setUsuarios([...usuarios, { ...usuarioData, id: Date.now(), ultimoAcceso: 'Nunca' }]);
+  const fetchUsuarios = async () => {
+    try {
+      const res = await fetch(`${BASE}/api/usuarios?rol=Administrador&rol=Checador`);
+      if (res.ok) setUsuarios(await res.json());
+    } catch {
+      setToast({ type: 'error', text: 'Error de conexión con el servidor' });
     }
-    setShowModal(false);
-    setEditingUser(null);
-    setToast({ type: 'success', text: isEditing ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente' });
   };
 
-  const getEstadoColor = (estado) =>
-    estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  const filteredUsuarios = usuarios.filter(u => {
+    const term = searchTerm.toLowerCase();
+    return (u.email || '').toLowerCase().includes(term) ||
+           toUiRol(u.rol).toLowerCase().includes(term) ||
+           `${u.nombre} ${u.apellido}`.toLowerCase().includes(term);
+  });
+
+  const handleDelete = async (id) => {
+    try {
+      const res = await fetch(`${BASE}/api/usuarios/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmDeleteId(null);
+        await fetchUsuarios();
+        setToast({ type: 'success', text: 'Usuario eliminado correctamente' });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setConfirmDeleteId(null);
+        setToast({ type: 'error', text: err.message || 'No se puede eliminar: tiene registros asociados' });
+      }
+    } catch {
+      setConfirmDeleteId(null);
+      setToast({ type: 'error', text: 'Error de conexión al eliminar' });
+    }
+  };
+
+  const handleSave = async (formData) => {
+    const isEditing = !!editingUser;
+    const url = isEditing ? `${BASE}/api/usuarios/${editingUser.id}` : `${BASE}/api/usuarios`;
+
+    const payload = {
+      nombre: formData.nombre,
+      apellido: formData.apellido,
+      numeroEmpleado: formData.numeroEmpleado,
+      email: formData.email,
+      rol: toDbRol(formData.rol),
+      status: formData.status,
+      tarjetaNFC: null,
+      datoBiometrico: null,
+    };
+
+    try {
+      const res = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        await fetchUsuarios();
+        setShowModal(false);
+        setEditingUser(null);
+        setToast({ type: 'success', text: isEditing ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente' });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setToast({ type: 'error', text: err.message || 'Error al guardar el usuario' });
+      }
+    } catch {
+      setToast({ type: 'error', text: 'Error de conexión al guardar' });
+    }
+  };
+
+  const getEstadoColor = (status) =>
+    status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
 
   const getRolColor = (rol) =>
     rol === 'Administrador' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
@@ -73,7 +117,7 @@ export default function Usuarios() {
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar por correo o rol..."
+            placeholder="Buscar por correo, nombre o rol..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -85,6 +129,7 @@ export default function Usuarios() {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Correo Electrónico</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
@@ -95,71 +140,54 @@ export default function Usuarios() {
           <tbody className="divide-y divide-gray-200">
             {filteredUsuarios.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No hay usuarios registrados</td>
+                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No hay usuarios registrados</td>
               </tr>
             ) : (
               filteredUsuarios.map((usuario) => (
                 <Fragment key={usuario.id}>
                   <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 font-medium text-gray-900">{usuario.nombre} {usuario.apellido}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Mail size={16} className="text-gray-400" />
-                        <span className="font-medium text-gray-900">{usuario.email}</span>
+                        <span className="text-gray-900">{usuario.email}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRolColor(usuario.rol)}`}>
                         <Shield size={12} />
-                        {usuario.rol}
+                        {toUiRol(usuario.rol)}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(usuario.estado)}`}>
-                        {usuario.estado === 'Activo' ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                        {usuario.estado}
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(usuario.status)}`}>
+                        {usuario.status ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                        {usuario.status ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{usuario.ultimoAcceso}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {usuario.updatedAt ? new Date(usuario.updatedAt).toLocaleString('es-MX') : 'Nunca'}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-3">
-                        <button
-                          onClick={() => { setEditingUser(usuario); setShowModal(true); }}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="Editar"
-                        >
+                        <button onClick={() => { setEditingUser(usuario); setShowModal(true); }} className="text-blue-600 hover:text-blue-800" title="Editar">
                           <Edit size={18} />
                         </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(usuario.id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Eliminar"
-                        >
+                        <button onClick={() => setConfirmDeleteId(usuario.id)} className="text-red-600 hover:text-red-800" title="Eliminar">
                           <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
                   </tr>
                   {confirmDeleteId === usuario.id && (
-                    <tr key={`confirm-${usuario.id}`} className="bg-red-50">
-                      <td colSpan="5" className="px-6 py-3">
+                    <tr className="bg-red-50">
+                      <td colSpan="6" className="px-6 py-3">
                         <div className="flex items-center gap-3">
                           <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
-                          <span className="text-sm text-red-700">
-                            ¿Eliminar <strong>{usuario.email}</strong>? Esta acción no se puede deshacer.
-                          </span>
+                          <span className="text-sm text-red-700">¿Eliminar a <strong>{usuario.email}</strong>? Esta acción no se puede deshacer.</span>
                           <div className="flex gap-2 ml-auto">
-                            <button
-                              onClick={() => setConfirmDeleteId(null)}
-                              className="px-3 py-1 text-sm border rounded-lg text-gray-600 hover:bg-gray-100"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => handleDelete(usuario.id)}
-                              className="px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
-                              Eliminar
-                            </button>
+                            <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1 text-sm border rounded-lg text-gray-600 hover:bg-gray-100">Cancelar</button>
+                            <button onClick={() => handleDelete(usuario.id)} className="px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Eliminar</button>
                           </div>
                         </div>
                       </td>
@@ -177,7 +205,7 @@ export default function Usuarios() {
           <span className="text-sm text-gray-600">Total: {usuarios.length} usuarios</span>
           <div className="flex gap-4">
             <span className="text-xs text-gray-500">Administradores: {usuarios.filter(u => u.rol === 'Administrador').length}</span>
-            <span className="text-xs text-gray-500">Verificadores: {usuarios.filter(u => u.rol === 'Verificador').length}</span>
+            <span className="text-xs text-gray-500">Verificadores: {usuarios.filter(u => u.rol === 'Checador').length}</span>
           </div>
         </div>
       </div>
@@ -196,56 +224,58 @@ export default function Usuarios() {
 
 function UserModal({ user, onSave, onClose }) {
   const [formData, setFormData] = useState({
+    nombre: user?.nombre || '',
+    apellido: user?.apellido || '',
+    numeroEmpleado: user?.numeroEmpleado || '',
     email: user?.email || '',
-    rol: user?.rol || 'Verificador',
-    estado: user?.estado || 'Activo',
-    password: '',
-    confirmPassword: '',
+    rol: toUiRol(user?.rol) || 'Verificador',
+    status: user?.status !== false,
   });
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = () => {
-    const newErrors = {};
-    if (!formData.email) {
-      newErrors.email = 'El correo es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Correo inválido';
-    }
-    if (!user) {
-      if (!formData.password) {
-        newErrors.password = 'La contraseña es requerida';
-      } else if (formData.password.length < 6) {
-        newErrors.password = 'Mínimo 6 caracteres';
-      }
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Las contraseñas no coinciden';
-      }
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const e = {};
+    if (!formData.nombre.trim()) e.nombre = 'El nombre es requerido';
+    if (!formData.apellido.trim()) e.apellido = 'El apellido es requerido';
+    if (!formData.numeroEmpleado.trim()) e.numeroEmpleado = 'El número de empleado es requerido';
+    if (!formData.email) e.email = 'El correo es requerido';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) e.email = 'Correo inválido';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      const { password, confirmPassword, ...userData } = formData;
-      onSave(userData);
-    }
+    if (validateForm()) onSave(formData);
   };
+
+  const field = (label, key, placeholder, type = 'text') => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <input
+        type={type}
+        value={formData[key]}
+        onChange={(e) => { setFormData({ ...formData, [key]: e.target.value }); setErrors({ ...errors, [key]: undefined }); }}
+        placeholder={placeholder}
+        className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors[key] ? 'border-red-400' : ''}`}
+      />
+      {errors[key] && <p className="text-xs text-red-500 mt-1">{errors[key]}</p>}
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-full max-w-md">
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold text-gray-800">{user ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={20} />
-          </button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="p-4 space-y-4">
+            {field('Nombre', 'nombre', 'ej. Juan')}
+            {field('Apellido', 'apellido', 'ej. Pérez')}
+            {field('Número de Empleado', 'numeroEmpleado', 'ej. ADM001')}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
               <div className="relative">
@@ -253,10 +283,9 @@ function UserModal({ user, onSave, onClose }) {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setErrors({ ...errors, email: undefined }); }}
                   placeholder="ejemplo@workstamp.com"
                   className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? 'border-red-400' : ''}`}
-                  autoFocus
                 />
               </div>
               {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
@@ -271,66 +300,26 @@ function UserModal({ user, onSave, onClose }) {
                   onChange={(e) => setFormData({ ...formData, rol: e.target.value })}
                   className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {rolesOptions.map(rol => <option key={rol} value={rol}>{rol}</option>)}
+                  {ROLES_UI.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-              <select
-                value={formData.estado}
-                onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="flex items-center justify-between border rounded-lg px-3 py-2">
+              <span className="text-sm font-medium text-gray-700">Estado activo</span>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, status: !formData.status })}
+                className={`w-11 h-6 rounded-full transition-colors relative ${formData.status ? 'bg-blue-600' : 'bg-gray-300'}`}
               >
-                {estadosOptions.map(estado => <option key={estado} value={estado}>{estado}</option>)}
-              </select>
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.status ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
             </div>
-
-            {!user && (
-              <>
-                <div className="border-t pt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Mínimo 6 caracteres"
-                      className={`w-full pr-10 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.password ? 'border-red-400' : ''}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                  {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.confirmPassword ? 'border-red-400' : ''}`}
-                  />
-                  {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>}
-                </div>
-              </>
-            )}
           </div>
 
           <div className="p-4 border-t flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
-              Cancelar
-            </button>
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              {user ? 'Actualizar' : 'Crear Usuario'}
-            </button>
+            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
+            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{user ? 'Actualizar' : 'Crear Usuario'}</button>
           </div>
         </form>
       </div>
