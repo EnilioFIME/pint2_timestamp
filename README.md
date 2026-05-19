@@ -14,7 +14,7 @@ Sistema de control de asistencia para empleados de campo en una empresa construc
 - Android: Java/Kotlin, NFC, cámara
 - Web: React, Node.js
 - Backend: Java, Spring Boot, Maven
-- Infra: Azure SQL, Azure Cognitive Services (Face), Azure App Service, Bicep
+- Infra: Azure SQL, AWS Rekognition (Face), Azure App Service, Bicep
 
 ## Ejecución local (alto nivel)
 1. Base de datos (Azure SQL o SQL Server local):
