@@ -9,7 +9,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import com.fieldcheck.session.VerificationSession
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,9 +35,11 @@ fun ConfirmationScreen(
     onBack: () -> Unit,
     onVolverAsistencia: () -> Unit
 ) {
-    val project     = MockData.projects.find { it.id == projectId } ?: MockData.projects.first()
-    val currentTime = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date()) }
-    val subtitle    = if (action == "entrada") "Entrada registrada exitosamente" else "Salida registrada exitosamente"
+    val project      = MockData.projects.find { it.id == projectId } ?: MockData.projects.first()
+    val currentTime  = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date()) }
+    val subtitle     = if (action == "entrada") "Entrada registrada exitosamente" else "Salida registrada exitosamente"
+    val sessionId    by VerificationSession.employeeId.collectAsState()
+    val employeeName = MockData.getEmployeeName(sessionId)
 
     Scaffold(
         topBar = {
@@ -115,7 +120,7 @@ fun ConfirmationScreen(
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    DetailRow("Empleado", MockData.mockEmployee)
+                    DetailRow("Empleado", employeeName)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = BorderLight)
                     DetailRow("Proyecto", project.name)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = BorderLight)

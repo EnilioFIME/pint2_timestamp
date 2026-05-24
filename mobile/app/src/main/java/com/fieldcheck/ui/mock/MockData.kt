@@ -10,5 +10,12 @@ object MockData {
         MockProject(3, "Bodegas Industriales", "Nave 4",       true)
     )
     val user = MockUser("Carlos Rivera", "Checador")
-    const val mockEmployee = "Juan Pérez"
+
+    private val employeeNames = mapOf(
+        "luis"   to "Luis Espinosa",
+        "emilio" to "Emilio"
+    )
+
+    fun getEmployeeName(id: String?): String =
+        id?.let { employeeNames[it.trim().lowercase()] } ?: id?.ifBlank { null } ?: "Empleado"
 }

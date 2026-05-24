@@ -8,6 +8,13 @@ android {
     namespace = "com.fieldcheck"
     compileSdk = 36
 
+    val rawBaseUrl = (project.findProperty("fieldcheck.baseUrl") as String?)?.trim().orEmpty()
+    val normalizedBaseUrl = when {
+        rawBaseUrl.isBlank() -> "http://10.0.2.2:8080/"
+        rawBaseUrl.endsWith("/") -> rawBaseUrl
+        else -> "$rawBaseUrl/"
+    }
+
     defaultConfig {
         applicationId = "com.fieldcheck"
         minSdk = 26
@@ -16,6 +23,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "API_BASE_URL", "\"$normalizedBaseUrl\"")
     }
 
     buildTypes {
@@ -36,6 +44,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
