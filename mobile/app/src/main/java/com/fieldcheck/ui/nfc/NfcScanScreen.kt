@@ -19,7 +19,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fieldcheck.nfc.NfcReaderManager
+import com.fieldcheck.session.VerificationSession
 import com.fieldcheck.ui.theme.NavyDeep
+import kotlinx.coroutines.flow.collectLatest
 
 private enum class NfcScanState { SCANNING, ERROR }
 
@@ -31,6 +34,26 @@ fun NfcScanScreen(
     onCancel: () -> Unit
 ) {
     var state by remember { mutableStateOf(NfcScanState.SCANNING) }
+    var errorMessage by remember { mutableStateOf("No se pudo leer la tarjeta") }
+
+    LaunchedEffect(Unit) {
+        NfcReaderManager.scanEvents.collectLatest { result ->
+            result.fold(
+                onSuccess = { data ->
+                    VerificationSession.setEmployeeId(data.cardId)
+                    onSuccess()
+                },
+                onFailure = { throwable ->
+                    errorMessage = when (throwable.message) {
+                        "UNSUPPORTED_TAG_TYPE" -> "La tarjeta no es NTAG213"
+                        "TAG_ID_INVALID" -> "Tag NFC inválido"
+                        else -> "Error de lectura NFC"
+                    }
+                    state = NfcScanState.ERROR
+                }
+            )
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -44,6 +67,7 @@ fun NfcScanScreen(
                 onSimulateError = { state = NfcScanState.ERROR }
             )
             NfcScanState.ERROR -> ErrorContent(
+                message = errorMessage,
                 onRetry = { state = NfcScanState.SCANNING },
                 onCancel = onCancel
             )
@@ -110,7 +134,7 @@ private fun ScanningContent(onSuccess: () -> Unit, onSimulateError: () -> Unit) 
 }
 
 @Composable
-private fun ErrorContent(onRetry: () -> Unit, onCancel: () -> Unit) {
+private fun ErrorContent(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(horizontal = 32.dp)
@@ -127,6 +151,8 @@ private fun ErrorContent(onRetry: () -> Unit, onCancel: () -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text("Error de Lectura", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(message, fontSize = 14.sp, color = Color.White.copy(alpha = 0.85f))
 
         Spacer(modifier = Modifier.height(32.dp))
 
