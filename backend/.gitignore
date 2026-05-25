@@ -1,2 +1,3 @@
-# Ignorar credenciales locales
-resources/application.properties
+# Variables de entorno locales (credenciales DB/auth)
+.env
+.env.*

@@ -1,12 +1,14 @@
 package com.fieldcheck.controller;
 
 import com.fieldcheck.model.CercoGeografico;
+import com.fieldcheck.model.dto.PageResponse;
 import com.fieldcheck.service.CercoGeograficoService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/cercos")
@@ -19,8 +21,11 @@ public class CercoGeograficoController {
     }
 
     @GetMapping
-    public List<CercoGeografico> getAll() {
-        return service.findAll();
+    public PageResponse<CercoGeografico> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return new PageResponse<>(service.findAll(PageRequest.of(page, size, Sort.by("id").descending())));
     }
 
     @GetMapping("/{id}")
@@ -29,12 +34,12 @@ public class CercoGeograficoController {
     }
 
     @PostMapping
-    public ResponseEntity<CercoGeografico> create(@RequestBody CercoGeografico cerco) {
+    public ResponseEntity<CercoGeografico> create(@Valid @RequestBody CercoGeografico cerco) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.save(cerco));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CercoGeografico> update(@PathVariable Long id, @RequestBody CercoGeografico cerco) {
+    public ResponseEntity<CercoGeografico> update(@PathVariable Long id, @Valid @RequestBody CercoGeografico cerco) {
         return ResponseEntity.ok(service.update(id, cerco));
     }
 

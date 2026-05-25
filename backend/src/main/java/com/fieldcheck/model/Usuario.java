@@ -2,6 +2,10 @@ package com.fieldcheck.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -30,18 +34,29 @@ public class Usuario {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private DatoBiometrico datoBiometrico;
 
+    @NotBlank(message = "El rol es obligatorio")
+    @Pattern(regexp = "Empleado|Checador|Administrador",
+             message = "El rol debe ser 'Empleado', 'Checador' o 'Administrador'")
     @Column(name = "Rol", nullable = false, length = 20)
     private String rol;
 
+    @NotBlank(message = "El número de empleado es obligatorio")
+    @Size(max = 6, message = "El número de empleado no puede superar 6 caracteres")
     @Column(name = "NumeroEmpleado", nullable = false, unique = true, length = 6)
     private String numeroEmpleado;
 
+    @Email(message = "Formato de email inválido")
+    @Size(max = 60, message = "El email no puede superar 60 caracteres")
     @Column(name = "Email", length = 60)
     private String email;
 
+    @NotBlank(message = "El apellido es obligatorio")
+    @Size(max = 100, message = "El apellido no puede superar 100 caracteres")
     @Column(name = "Apellido", nullable = false, length = 100)
     private String apellido;
 
+    @NotBlank(message = "El nombre es obligatorio")
+    @Size(max = 100, message = "El nombre no puede superar 100 caracteres")
     @Column(name = "Nombre", nullable = false, length = 100)
     private String nombre;
 

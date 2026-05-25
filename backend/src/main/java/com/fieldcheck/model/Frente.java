@@ -2,6 +2,8 @@ package com.fieldcheck.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -17,6 +19,8 @@ public class Frente {
     @Column(nullable = false, unique = true, length = 36, updatable = false)
     private String uuid;
 
+    @NotBlank(message = "El nombre del frente es obligatorio")
+    @Size(max = 200, message = "El nombre no puede superar 200 caracteres")
     @Column(nullable = false, length = 200)
     private String nombre;
 

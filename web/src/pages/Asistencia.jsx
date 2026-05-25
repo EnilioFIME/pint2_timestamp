@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Search, Download, Filter, User, FolderOpen, Clock } from 'lucide-react';
-
-const BASE = import.meta.env.VITE_BACKEND_BASE_URL;
+import Pagination from '../components/Pagination';
+import { apiFetch, PAGE_SIZE } from '../lib/api';
 
 const ESTADOS = ['Todos', 'Completada', 'En Curso', 'Inconsistente'];
 const METODOS = ['Todos', 'NFC', 'Facial'];
 
 export default function Asistencia() {
   const [registros, setRegistros] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filtros, setFiltros] = useState({
@@ -18,19 +20,22 @@ export default function Asistencia() {
     fechaFin: '',
   });
 
-  useEffect(() => { fetchAsistencias(); }, []);
+  useEffect(() => { fetchAsistencias(); }, [page]);
 
   const fetchAsistencias = async () => {
     const params = new URLSearchParams();
     if (filtros.fechaInicio) params.set('fechaDesde', filtros.fechaInicio);
     if (filtros.fechaFin) params.set('fechaHasta', filtros.fechaFin);
+    params.set('page', page);
+    params.set('size', PAGE_SIZE);
 
     try {
-      const res = await fetch(`${BASE}/api/asistencias?${params}`);
+      const res = await apiFetch(`/api/asistencias?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setTotal(data.length);
-        setRegistros(data);
+        setRegistros(data.content);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
       }
     } catch {
       console.error('Error al cargar asistencias');
@@ -49,12 +54,15 @@ export default function Asistencia() {
     return matchesSearch && matchesEstado && matchesMetodo;
   });
 
-  const aplicarFiltros = () => fetchAsistencias();
+  const aplicarFiltros = () => {
+    if (page !== 0) setPage(0);
+    else fetchAsistencias();
+  };
 
   const limpiarFiltros = () => {
     setSearchTerm('');
     setFiltros({ estado: 'Todos', metodo: 'Todos', fechaInicio: '', fechaFin: '' });
-    setTimeout(() => fetchAsistencias(), 0);
+    setPage(0);
   };
 
   const formatDateTime = (isoString) => {
@@ -259,16 +267,18 @@ export default function Asistencia() {
         </table>
       </div>
 
-      <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">
-            Mostrando {filteredRegistros.length} de {total} sesiones
-          </span>
-          <button onClick={limpiarFiltros} className="text-sm text-blue-600 hover:text-blue-700">
-            Limpiar filtros
-          </button>
-        </div>
+      <div className="px-4 pt-3 border-t bg-gray-50 flex justify-end">
+        <button onClick={limpiarFiltros} className="text-sm text-blue-600 hover:text-blue-700">
+          Limpiar filtros
+        </button>
       </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        size={PAGE_SIZE}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

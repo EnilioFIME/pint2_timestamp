@@ -1,8 +1,8 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Search, Plus, Edit, Trash2, X, Mail, Shield, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
-
-const BASE = import.meta.env.VITE_BACKEND_BASE_URL;
+import Pagination from '../components/Pagination';
+import { apiFetch, PAGE_SIZE } from '../lib/api';
 
 // UI muestra "Verificador" pero la BD usa "Checador"
 const ROLES_UI = ['Administrador', 'Verificador'];
@@ -11,18 +11,26 @@ const toUiRol = (dbRol) => dbRol === 'Checador' ? 'Verificador' : dbRol;
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => { fetchUsuarios(); }, []);
+  useEffect(() => { fetchUsuarios(); }, [page]);
 
   const fetchUsuarios = async () => {
     try {
-      const res = await fetch(`${BASE}/api/usuarios?rol=Administrador&rol=Checador`);
-      if (res.ok) setUsuarios(await res.json());
+      const res = await apiFetch(`/api/usuarios?rol=Administrador&rol=Checador&page=${page}&size=${PAGE_SIZE}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUsuarios(data.content);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
+      }
     } catch {
       setToast({ type: 'error', text: 'Error de conexión con el servidor' });
     }
@@ -37,7 +45,7 @@ export default function Usuarios() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`${BASE}/api/usuarios/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/usuarios/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setConfirmDeleteId(null);
         await fetchUsuarios();
@@ -55,7 +63,7 @@ export default function Usuarios() {
 
   const handleSave = async (formData) => {
     const isEditing = !!editingUser;
-    const url = isEditing ? `${BASE}/api/usuarios/${editingUser.id}` : `${BASE}/api/usuarios`;
+    const path = isEditing ? `/api/usuarios/${editingUser.id}` : `/api/usuarios`;
 
     const payload = {
       nombre: formData.nombre,
@@ -69,9 +77,8 @@ export default function Usuarios() {
     };
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(path, {
         method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -200,15 +207,13 @@ export default function Usuarios() {
         </table>
       </div>
 
-      <div className="p-4 border-t bg-gray-50 rounded-b-lg">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Total: {usuarios.length} usuarios</span>
-          <div className="flex gap-4">
-            <span className="text-xs text-gray-500">Administradores: {usuarios.filter(u => u.rol === 'Administrador').length}</span>
-            <span className="text-xs text-gray-500">Verificadores: {usuarios.filter(u => u.rol === 'Checador').length}</span>
-          </div>
-        </div>
-      </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        size={PAGE_SIZE}
+        onPageChange={setPage}
+      />
 
       {showModal && (
         <UserModal

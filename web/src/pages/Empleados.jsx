@@ -1,23 +1,31 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Edit, Trash2, Plus, Search, X, Smartphone, Fingerprint, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
-
-const BASE = import.meta.env.VITE_BACKEND_BASE_URL;
+import Pagination from '../components/Pagination';
+import { apiFetch, PAGE_SIZE } from '../lib/api';
 
 export default function Empleados() {
   const [empleados, setEmpleados] = useState([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingEmpleado, setEditingEmpleado] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => { fetchEmpleados(); }, []);
+  useEffect(() => { fetchEmpleados(); }, [page]);
 
   const fetchEmpleados = async () => {
     try {
-      const res = await fetch(`${BASE}/api/usuarios?rol=Empleado`);
-      if (res.ok) setEmpleados(await res.json());
+      const res = await apiFetch(`/api/usuarios?rol=Empleado&page=${page}&size=${PAGE_SIZE}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEmpleados(data.content);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
+      }
     } catch {
       setToast({ type: 'error', text: 'Error de conexión con el servidor' });
     }
@@ -31,7 +39,7 @@ export default function Empleados() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`${BASE}/api/usuarios/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/usuarios/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setConfirmDeleteId(null);
         await fetchEmpleados();
@@ -49,7 +57,7 @@ export default function Empleados() {
 
   const handleSave = async (formData) => {
     const isEditing = !!editingEmpleado;
-    const url = isEditing ? `${BASE}/api/usuarios/${editingEmpleado.id}` : `${BASE}/api/usuarios`;
+    const path = isEditing ? `/api/usuarios/${editingEmpleado.id}` : `/api/usuarios`;
 
     const payload = {
       nombre: formData.nombre,
@@ -63,9 +71,8 @@ export default function Empleados() {
     };
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(path, {
         method: isEditing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -176,6 +183,14 @@ export default function Empleados() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        size={PAGE_SIZE}
+        onPageChange={setPage}
+      />
 
       {showModal && (
         <EmpleadoModal

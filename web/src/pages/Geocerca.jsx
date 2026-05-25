@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Radio, Save, Target, AlertCircle, CheckCircle } from 'lucide-react';
-
-const BASE = import.meta.env.VITE_BACKEND_BASE_URL;
+import { apiFetch } from '../lib/api';
 
 export default function Geocerca() {
   const [proyectos, setProyectos] = useState([]);
@@ -17,11 +16,14 @@ export default function Geocerca() {
 
   const fetchProyectos = async () => {
     try {
-      const res = await fetch(`${BASE}/api/proyectos`);
+      // El backend devuelve un PageResponse paginado; pedimos hasta 200
+      // para cubrir la lista de proyectos en el selector sin múltiples páginas.
+      const res = await apiFetch(`/api/proyectos?page=0&size=200`);
       if (res.ok) {
         const data = await res.json();
-        setProyectos(data);
-        if (data.length > 0) seleccionarProyecto(data[0]);
+        const items = data.content || [];
+        setProyectos(items);
+        if (items.length > 0) seleccionarProyecto(items[0]);
       }
     } catch {
       mostrarMensaje('error', 'Error al cargar proyectos');
@@ -33,7 +35,7 @@ export default function Geocerca() {
     setMensaje(null);
     if (proyecto.idCerco) {
       try {
-        const res = await fetch(`${BASE}/api/cercos/${proyecto.idCerco}`);
+        const res = await apiFetch(`/api/cercos/${proyecto.idCerco}`);
         if (res.ok) {
           const cerco = await res.json();
           setLatitud(cerco.latitud?.toString() || '');
@@ -100,26 +102,23 @@ export default function Geocerca() {
 
       if (proyectoSeleccionado.idCerco) {
         // Actualizar cerco existente
-        const res = await fetch(`${BASE}/api/cercos/${proyectoSeleccionado.idCerco}`, {
+        const res = await apiFetch(`/api/cercos/${proyectoSeleccionado.idCerco}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error('Error al actualizar cerco');
       } else {
         // Crear nuevo cerco y asociarlo al proyecto
-        const resCerco = await fetch(`${BASE}/api/cercos`, {
+        const resCerco = await apiFetch(`/api/cercos`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         if (!resCerco.ok) throw new Error('Error al crear cerco');
         const nuevoCerco = await resCerco.json();
 
         // Asignar el cerco al proyecto vía PUT
-        const resProyecto = await fetch(`${BASE}/api/proyectos/${proyectoSeleccionado.id}`, {
+        const resProyecto = await apiFetch(`/api/proyectos/${proyectoSeleccionado.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...proyectoSeleccionado, idCerco: nuevoCerco.id }),
         });
         if (!resProyecto.ok) throw new Error('Error al asociar cerco al proyecto');

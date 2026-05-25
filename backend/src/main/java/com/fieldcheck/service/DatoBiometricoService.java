@@ -3,9 +3,10 @@ package com.fieldcheck.service;
 import com.fieldcheck.exception.ResourceNotFoundException;
 import com.fieldcheck.model.DatoBiometrico;
 import com.fieldcheck.repository.DatoBiometricoRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -17,8 +18,8 @@ public class DatoBiometricoService {
         this.repository = repository;
     }
 
-    public List<DatoBiometrico> findAll() {
-        return repository.findAll();
+    public Page<DatoBiometrico> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
     public DatoBiometrico findById(Long id) {

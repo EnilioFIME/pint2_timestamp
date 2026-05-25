@@ -1,12 +1,14 @@
 package com.fieldcheck.controller;
 
 import com.fieldcheck.model.TarjetaNFC;
+import com.fieldcheck.model.dto.PageResponse;
 import com.fieldcheck.service.TarjetaNFCService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/tarjetas-nfc")
@@ -19,8 +21,11 @@ public class TarjetaNFCController {
     }
 
     @GetMapping
-    public List<TarjetaNFC> getAll() {
-        return service.findAll();
+    public PageResponse<TarjetaNFC> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return new PageResponse<>(service.findAll(PageRequest.of(page, size, Sort.by("id").descending())));
     }
 
     @GetMapping("/{id}")
@@ -29,12 +34,12 @@ public class TarjetaNFCController {
     }
 
     @PostMapping
-    public ResponseEntity<TarjetaNFC> create(@RequestBody TarjetaNFC tarjeta) {
+    public ResponseEntity<TarjetaNFC> create(@Valid @RequestBody TarjetaNFC tarjeta) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.save(tarjeta));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TarjetaNFC> update(@PathVariable Long id, @RequestBody TarjetaNFC tarjeta) {
+    public ResponseEntity<TarjetaNFC> update(@PathVariable Long id, @Valid @RequestBody TarjetaNFC tarjeta) {
         return ResponseEntity.ok(service.update(id, tarjeta));
     }
 

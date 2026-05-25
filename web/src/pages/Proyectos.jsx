@@ -1,9 +1,14 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Edit, Trash2, Plus, Search, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
+import Pagination from '../components/Pagination';
+import { apiFetch, PAGE_SIZE } from '../lib/api';
 
 export default function Proyectos() {
   const [projects, setProjects] = useState([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
@@ -13,18 +18,20 @@ export default function Proyectos() {
   const [cercos, setCercos] = useState([]);
   const estadoOptions = ['Activo', 'Inactivo'];
 
+  useEffect(() => { fetchProyectos(); }, [page]);
   useEffect(() => {
-    fetchProyectos();
     fetchFrentes();
     fetchCercos();
   }, []);
 
   const fetchProyectos = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/proyectos`);
+      const res = await apiFetch(`/api/proyectos?page=${page}&size=${PAGE_SIZE}`);
       if (res.ok) {
         const data = await res.json();
-        setProjects(data);
+        setProjects(data.content);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
       }
     } catch (error) {
       console.error('Error al cargar proyectos:', error);
@@ -34,10 +41,10 @@ export default function Proyectos() {
 
   const fetchFrentes = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes`);
+      const res = await apiFetch(`/api/frentes?page=0&size=200`);
       if (res.ok) {
         const data = await res.json();
-        setFrentesObra(data); // Guardamos el objeto completo (id y nombre)
+        setFrentesObra(data.content);
       }
     } catch (error) {
       console.error('Error al cargar frentes:', error);
@@ -46,10 +53,10 @@ export default function Proyectos() {
 
   const fetchCercos = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/cercos`);
+      const res = await apiFetch(`/api/cercos?page=0&size=200`);
       if (res.ok) {
         const data = await res.json();
-        setCercos(data);
+        setCercos(data.content);
       }
     } catch (error) {
       console.error('Error al cargar cercos:', error);
@@ -63,24 +70,23 @@ export default function Proyectos() {
   const handleSave = async (projectData) => {
     const isEditing = !!editingProject;
     const method = isEditing ? 'PUT' : 'POST';
-    const url = isEditing
-      ? `${import.meta.env.VITE_BACKEND_BASE_URL}/api/proyectos/${editingProject.id}`
-      : `${import.meta.env.VITE_BACKEND_BASE_URL}/api/proyectos`;
+    const path = isEditing
+      ? `/api/proyectos/${editingProject.id}`
+      : `/api/proyectos`;
 
-    // Transformación: React usa Texto ('Activo'/'Inactivo'), BD usa booleano
+    // El backend persiste idFrente/idCerco como columnas FK; las relaciones
+    // frente/cerco son read-only en la entidad (insertable=false, updatable=false),
+    // por eso no se envían anidadas.
     const payload = {
       nombre: projectData.nombre,
       idFrente: projectData.idFrente || null,
-      frente: projectData.idFrente ? { id: projectData.idFrente } : null, // Mapeo redundante por si Spring Boot espera la entidad anidada
       idCerco: projectData.idCerco || null,
-      cerco: projectData.idCerco ? { id: projectData.idCerco } : null,
       status: projectData.estado === 'Activo'
     };
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(path, {
         method,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -89,16 +95,31 @@ export default function Proyectos() {
         setShowModal(false);
         setEditingProject(null);
         setToast({ type: 'success', text: isEditing ? 'Proyecto actualizado correctamente' : 'Proyecto agregado correctamente' });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setToast({ type: 'error', text: err.message || 'Error al guardar el proyecto' });
       }
     } catch (error) {
       setToast({ type: 'error', text: 'Error al guardar el proyecto' });
     }
   };
 
-  const handleDelete = (id) => {
-    setProjects(projects.filter(p => p.id !== id));
-    setConfirmDeleteId(null);
-    setToast({ type: 'success', text: 'Proyecto ocultado localmente (Falta endpoint DELETE en Backend)' });
+  const handleDelete = async (id) => {
+    try {
+      const res = await apiFetch(`/api/proyectos/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setConfirmDeleteId(null);
+        await fetchProyectos();
+        setToast({ type: 'success', text: 'Proyecto eliminado correctamente' });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setConfirmDeleteId(null);
+        setToast({ type: 'error', text: err.message || 'No se puede eliminar: tiene registros asociados' });
+      }
+    } catch {
+      setConfirmDeleteId(null);
+      setToast({ type: 'error', text: 'Error de conexión al eliminar' });
+    }
   };
 
   const getEstadoColor = (estado) => {
@@ -210,6 +231,14 @@ export default function Proyectos() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        size={PAGE_SIZE}
+        onPageChange={setPage}
+      />
 
       {showModal && (
         <ProjectModal

@@ -10,8 +10,7 @@ public record AsistenciaDTO(
         String estado,
         BigDecimal horasTotales,
         UsuarioResumen usuario,
-        ProyectoResumen proyecto,
-        String tipoVerificacion
+        ProyectoResumen proyecto
 ) {
     public record UsuarioResumen(Long id, String nombre, String apellido, String numeroEmpleado) {}
     public record ProyectoResumen(Long id, String nombre) {}

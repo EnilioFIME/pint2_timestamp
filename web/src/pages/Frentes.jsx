@@ -1,25 +1,30 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Edit, Trash2, Plus, Search, X, AlertTriangle } from 'lucide-react';
 import Toast from '../components/Toast';
+import Pagination from '../components/Pagination';
+import { apiFetch, PAGE_SIZE } from '../lib/api';
 
 export default function Frentes() {
   const [frentes, setFrentes] = useState([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingFrente, setEditingFrente] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
 
-  useEffect(() => {
-    fetchFrentes();
-  }, []);
+  useEffect(() => { fetchFrentes(); }, [page]);
 
   const fetchFrentes = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes`);
+      const res = await apiFetch(`/api/frentes?page=${page}&size=${PAGE_SIZE}`);
       if (res.ok) {
         const data = await res.json();
-        setFrentes(data);
+        setFrentes(data.content);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
       }
     } catch (error) {
       console.error('Error al cargar frentes:', error);
@@ -33,7 +38,7 @@ export default function Frentes() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes/${id}`, {
+      const res = await apiFetch(`/api/frentes/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -54,9 +59,7 @@ export default function Frentes() {
   const handleSave = async (frenteData) => {
     const isEditing = !!editingFrente;
     const method = isEditing ? 'PUT' : 'POST';
-    const url = isEditing
-      ? `${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes/${editingFrente.id}`
-      : `${import.meta.env.VITE_BACKEND_BASE_URL}/api/frentes`;
+    const path = isEditing ? `/api/frentes/${editingFrente.id}` : `/api/frentes`;
 
     // Transformación: React usa Texto ('Activo'/'Inactivo'), BD usa booleano
     const payload = {
@@ -65,9 +68,8 @@ export default function Frentes() {
     };
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(path, {
         method,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
@@ -190,6 +192,14 @@ export default function Frentes() {
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        size={PAGE_SIZE}
+        onPageChange={setPage}
+      />
 
       {showModal && (
         <FrenteModal

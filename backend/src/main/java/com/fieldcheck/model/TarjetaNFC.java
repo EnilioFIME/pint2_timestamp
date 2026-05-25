@@ -2,6 +2,8 @@ package com.fieldcheck.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,6 +20,8 @@ public class TarjetaNFC {
     @Column(name = "UUID", nullable = false, unique = true, length = 36, updatable = false)
     private String uuid;
 
+    @NotBlank(message = "El UID NFC es obligatorio")
+    @Size(max = 100, message = "El UID NFC no puede superar 100 caracteres")
     @Column(name = "NfcUid", nullable = false, unique = true, length = 100)
     private String nfcUid;
 

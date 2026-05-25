@@ -2,6 +2,9 @@ package com.fieldcheck.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,12 +22,21 @@ public class CercoGeografico {
     @Column(name = "UUID", nullable = false, unique = true, length = 36, updatable = false)
     private String uuid;
 
+    @NotNull(message = "La latitud es obligatoria")
+    @DecimalMin(value = "-90.0", message = "La latitud debe ser >= -90")
+    @DecimalMax(value = "90.0", message = "La latitud debe ser <= 90")
     @Column(name = "Latitud", nullable = false, precision = 10, scale = 7)
     private BigDecimal latitud;
 
+    @NotNull(message = "La longitud es obligatoria")
+    @DecimalMin(value = "-180.0", message = "La longitud debe ser >= -180")
+    @DecimalMax(value = "180.0", message = "La longitud debe ser <= 180")
     @Column(name = "Longitud", nullable = false, precision = 10, scale = 7)
     private BigDecimal longitud;
 
+    @NotNull(message = "El radio en metros es obligatorio")
+    @DecimalMin(value = "10.0", message = "El radio mínimo es 10 metros")
+    @DecimalMax(value = "500.0", message = "El radio máximo es 500 metros")
     @Column(name = "RadioMetros", nullable = false, precision = 6, scale = 2)
     private BigDecimal radioMetros;
 
